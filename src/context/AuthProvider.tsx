@@ -1,88 +1,78 @@
-'use client'; // ¡IMPORTANTE! Es un componente cliente por el uso de hooks y localStorage
+// frontend/src/context/AuthProvider.tsx
+'use client';
 
-import { useState, useEffect, type ReactNode, useMemo, useCallback } from 'react';
-import axios, { type AxiosInstance } from 'axios';
-import { AuthContext, type User } from './AuthCore';
+import React, { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
+import { AuthContext, User } from './AuthCore';
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [token, setToken] = useState<string | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState<User | null>(null);
-    const baseURL = 'http://localhost:3000'; // URL de tu NestJS Backend
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [loading, setLoading] = useState(true); // Estado para evitar renders innecesarios
 
-    // 1. Instancia de Axios (API)
-    const api: AxiosInstance = useMemo(() => {
-        return axios.create({ baseURL });
-    }, [baseURL]);
+    // Configuración de Axios
+    const api = useMemo(() => {
+        const instance = axios.create({
+            baseURL: 'http://localhost:3000', // Tu puerto de NestJS
+        });
 
-    // 2. Lógica de Login (estable, con useCallback)
-    const login = useCallback((newToken: string, userData: User) => {
-        setToken(newToken);
-        setUser(userData);
-        localStorage.setItem('jwtToken', newToken);
-        localStorage.setItem('user', JSON.stringify(userData));
-        setIsAuthenticated(true);
+        instance.interceptors.request.use((config) => {
+            const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            if (storedToken) {
+                config.headers.Authorization = `Bearer ${storedToken}`;
+            }
+            return config;
+        });
+
+        return instance;
     }, []);
 
-    // 3. Lógica de Logout (estable, con useCallback)
-    const logout = useCallback(() => {
+    // EFECTO CORREGIDO: Carga inicial desde localStorage
+    useEffect(() => {
+        const initializeAuth = () => {
+            const storedToken = localStorage.getItem('token');
+            const storedUser = localStorage.getItem('user');
+
+            if (storedToken && storedUser) {
+                try {
+                    const userData: User = JSON.parse(storedUser);
+
+                    // Actualizamos los estados
+                    setToken(storedToken);
+                    setUser(userData);
+                    setIsAuthenticated(true);
+                } catch (e) {
+                    console.error("Error al parsear el usuario del localStorage", e);
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                }
+            }
+            setLoading(false); // Finaliza la carga inicial
+        };
+
+        initializeAuth();
+    }, []);
+
+    const login = (newToken: string, newUser: User) => {
+        localStorage.setItem('token', newToken);
+        localStorage.setItem('user', JSON.stringify(newUser));
+        setToken(newToken);
+        setUser(newUser);
+        setIsAuthenticated(true);
+    };
+
+    const logout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         setToken(null);
         setUser(null);
-        localStorage.removeItem('jwtToken');
-        localStorage.removeItem('user');
         setIsAuthenticated(false);
-    }, []);
-
-    // 4. Cargar sesión al iniciar la aplicación (useEffect)
-    useEffect(() => {
-        const storedToken = localStorage.getItem('jwtToken');
-        const storedUser = localStorage.getItem('user');
-
-        if (storedToken && storedUser) {
-            try {
-                const userData: User = JSON.parse(storedUser);
-                setToken(storedToken);
-                setUser(userData);
-                setIsAuthenticated(true);
-            } catch (e) {
-                console.error("Error al parsear datos de usuario:", e);
-                logout();
-            }
-        }
-    }, [logout]);
-
-    // 5. Configurar y Limpiar el Interceptor de Axios (CLAVE: adjunta el token)
-    useEffect(() => {
-        let interceptorId: number | null = null;
-
-        if (token) {
-            interceptorId = api.interceptors.request.use(
-                (config) => {
-                    config.headers.Authorization = `Bearer ${token}`;
-                    return config;
-                }
-            );
-        }
-
-        return () => {
-            if (interceptorId !== null) {
-                api.interceptors.request.eject(interceptorId);
-            }
-        };
-    }, [token, api]);
-
-    // 6. Valor del contexto
-    const contextValue = useMemo(() => ({
-        isAuthenticated,
-        user,
-        login,
-        logout,
-        api,
-    }), [isAuthenticated, user, api, login, logout]);
+    };
 
     return (
-        <AuthContext.Provider value={contextValue}>
-            {children}
+        <AuthContext.Provider value={{ token, user, isAuthenticated, login, logout, api }}>
+            {!loading && children}
         </AuthContext.Provider>
     );
 };

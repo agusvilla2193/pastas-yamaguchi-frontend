@@ -1,28 +1,25 @@
-import React, { useContext } from 'react';
-import { type AxiosInstance } from 'axios';
+import { createContext, useContext } from 'react';
+import { AxiosInstance } from 'axios';
 
-// 1. Interfaz para tipar el usuario
 export interface User {
     id: number;
     firstName: string;
     lastName: string;
     email: string;
-    // Puedo añadir más campos si los necesito
+    // Agregar otros campos si devuelve más (ej: role)
 }
 
-// 2. Interfaz para tipar el Contexto de Autenticación
-interface AuthContextType {
-    isAuthenticated: boolean;
+export interface AuthContextType {
+    token: string | null;
     user: User | null;
-    login: (token: string, userData: User) => void;
+    isAuthenticated: boolean;
+    login: (token: string, user: User) => void;
     logout: () => void;
-    api: AxiosInstance; // La instancia de Axios configurada con el token
+    api: AxiosInstance;
 }
 
-// 3. Crear el Contexto
-export const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// 4. Hook personalizado para usar el contexto fácilmente
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
