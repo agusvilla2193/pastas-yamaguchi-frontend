@@ -6,7 +6,7 @@ export interface User {
     firstName: string;
     lastName: string;
     email: string;
-    // Agregar otros campos si devuelve más (ej: role)
+    role: string;
 }
 
 export interface AuthContextType {

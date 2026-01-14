@@ -1,4 +1,4 @@
-'use client'; 
+'use client';
 
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -12,7 +12,7 @@ interface LoginResponse {
         firstName: string;
         lastName: string;
         email: string;
-        // ... otros campos del usuario
+        role: string;
     };
 }
 
@@ -48,12 +48,12 @@ const LoginPage: React.FC = () => {
             });
 
             const { access_token, user } = response.data;
-            
+
             // 1. Llama a la función de contexto para guardar el token y el usuario
-            login(access_token, user); 
+            login(access_token, user);
 
             // 2. Redirigir a la página de productos
-            router.push('/products'); 
+            router.push('/products');
 
         } catch (err) {
             console.error('Error de login:', err);
@@ -77,7 +77,7 @@ const LoginPage: React.FC = () => {
         <div className="flex justify-center items-center min-h-[70vh]">
             <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-xl border border-gray-200">
                 <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">Iniciar Sesión</h2>
-                
+
                 {/* Mensaje de Error (Tailwind) */}
                 {error && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
@@ -100,7 +100,7 @@ const LoginPage: React.FC = () => {
                             required
                         />
                     </div>
-                    
+
                     <div className="mb-6">
                         <label className="block text-gray-700 text-sm font-semibold mb-2" htmlFor="password">
                             Contraseña
@@ -115,7 +115,7 @@ const LoginPage: React.FC = () => {
                             required
                         />
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                         <button
                             type="submit"
@@ -130,5 +130,14 @@ const LoginPage: React.FC = () => {
         </div>
     );
 };
+
+<div className="mt-4 text-center">
+    <p className="text-sm text-gray-600">
+        ¿No tienes cuenta?{' '}
+        <a href="/register" className="text-indigo-600 hover:underline font-medium">
+            Regístrate aquí
+        </a>
+    </p>
+</div>
 
 export default LoginPage;
