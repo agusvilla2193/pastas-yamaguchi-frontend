@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthCore';
-import Link from 'next/link';
 import Image from 'next/image';
 import ProductForm, { ProductFormData } from '../../components/ProductForm';
 
@@ -23,6 +22,7 @@ export default function ProductsPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [filter, setFilter] = useState('Todas');
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     // Lógica de filtrado
     const filteredProducts = products.filter(p => {
@@ -78,13 +78,52 @@ export default function ProductsPage() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('¿Estás seguro?')) return;
+    const handleCreate = async (formData: ProductFormData) => {
         try {
+            const finalData = {
+                ...formData,
+                price: Number(formData.price.toString().replace(',', '.')),
+                stock: Number(formData.stock),
+            };
+
+            const response = await api.post('/products', finalData);
+
+            // Agregamos el nuevo producto a la lista existente
+            setProducts((prev) => [...prev, response.data]);
+
+            // Cerramos el modal
+            setIsCreateModalOpen(false);
+        } catch (error: unknown) {
+            if (error && typeof error === 'object' && 'response' in error) {
+                const axiosError = error as { response: { data: { message?: string } } };
+                alert(axiosError.response.data.message || 'Error al crear el producto');
+            } else {
+                alert('No se pudo crear el producto');
+            }
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        // Confirmación nativa (puedes luego cambiarla por un modal más lindo)
+        const confirmed = window.confirm('¿Estás seguro de que deseas eliminar esta pasta? Esta acción no se puede deshacer.');
+        if (!confirmed) return;
+
+        try {
+            // Ejecutamos la eliminación en el backend
             await api.delete(`/products/${id}`);
+
+            // Actualizamos la UI inmediatamente filtrando el producto eliminado
             setProducts((prev) => prev.filter(p => p.id !== id));
-        } catch (error) {
-            console.error("Error al eliminar:", error);
+
+            // Opcional: Podrías usar una librería como sonner o react-hot-toast aquí
+            console.log("Producto eliminado con éxito");
+        } catch (error: unknown) {
+            if (error && typeof error === 'object' && 'response' in error) {
+                const axiosError = error as { response: { data: { message?: string } } };
+                alert(axiosError.response.data.message || 'Error al intentar eliminar el producto.');
+            } else {
+                alert('No se pudo eliminar el producto. Inténtalo de nuevo.');
+            }
         }
     };
 
@@ -118,11 +157,12 @@ export default function ProductsPage() {
                     </div>
 
                     {isLinkAdmin && (
-                        <Link href="/products/new">
-                            <button className="bg-white text-black px-5 py-2 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300 font-bold text-xs shadow-xl uppercase tracking-tight">
-                                + Nueva Pasta
-                            </button>
-                        </Link>
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="bg-white text-black px-5 py-2 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300 font-bold text-xs shadow-xl uppercase tracking-tight"
+                        >
+                            + Nueva Pasta
+                        </button>
                     )}
                 </div>
             </header>
@@ -226,6 +266,31 @@ export default function ProductsPage() {
                 </div>
             </main>
 
+            {/* --- MODAL DE CREACIÓN --- */}
+            {isCreateModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                        <div className="p-8 border-b border-neutral-800 flex justify-between items-center">
+                            <h2 className="text-2xl font-bold text-white tracking-tight">
+                                Crear <span className="text-red-500">Nueva Pasta</span>
+                            </h2>
+                            <button
+                                onClick={() => setIsCreateModalOpen(false)}
+                                className="text-neutral-500 hover:text-white transition-colors text-3xl"
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        <div className="p-8 text-white">
+                            <ProductForm
+                                onSubmit={handleCreate}
+                            // No paso initialData porque es un producto nuevo
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* --- MODAL DE EDICIÓN --- */}
             {isEditModalOpen && selectedProduct && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
@@ -236,7 +301,7 @@ export default function ProductsPage() {
                             </h2>
                             <button onClick={handleCloseModal} className="text-neutral-500 hover:text-white transition-colors text-3xl">&times;</button>
                         </div>
-                        <div className="p-8 text-black">
+                        <div className="p-8 text-white">
                             <ProductForm
                                 key={selectedProduct.id}
                                 onSubmit={handleUpdate}

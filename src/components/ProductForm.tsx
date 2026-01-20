@@ -6,9 +6,9 @@ import Image from 'next/image';
 export interface ProductFormData {
     name: string;
     description: string;
-    category: string; // Ya estaba en tu interfaz
-    price: number;
-    stock: number;
+    category: string;
+    price: string | number;
+    stock: string | number;
     image: string;
 }
 
@@ -18,17 +18,17 @@ interface ProductFormProps {
 }
 
 export default function ProductForm({ onSubmit, initialData }: ProductFormProps) {
-    // 1. Agregamos la categoría al estado inicial
     const [formData, setFormData] = useState<ProductFormData>({
         name: initialData?.name || '',
         description: initialData?.description || '',
-        category: initialData?.category || 'Simples', // Default 'Simples'
+        category: initialData?.category || 'Simples',
         price: initialData?.price || 0,
         stock: initialData?.stock || 0,
         image: initialData?.image || '',
     });
 
     const [uploading, setUploading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -57,33 +57,38 @@ export default function ProductForm({ onSubmit, initialData }: ProductFormProps)
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (formData.price <= 0) return alert("El precio debe ser mayor a 0");
-        if (formData.stock < 0) return alert("El stock no puede ser negativo");
-        onSubmit(formData);
+        setIsSubmitting(true);
+        await onSubmit(formData);
+        setIsSubmitting(false);
     };
 
+    // Estilo común para los inputs oscuros
+    const inputStyles = "w-full bg-neutral-800/50 border border-neutral-700 rounded-xl p-4 text-white placeholder:text-neutral-500 focus:border-red-600 focus:ring-1 focus:ring-red-600 outline-none transition-all";
+    const labelStyles = "text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1 mb-2 block";
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+        <form onSubmit={handleSubmit} className="space-y-6">
+            {/* NOMBRE */}
             <div>
-                <label className="block text-sm font-semibold text-gray-700">Nombre de la Pasta</label>
+                <label className={labelStyles}>Nombre de la Pasta</label>
                 <input
                     type="text"
                     required
-                    className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 outline-none text-black"
+                    className={inputStyles}
                     placeholder="Ej: Sorrentinos de Jamón y Queso"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
             </div>
 
-            {/* --- SELECTOR DE CATEGORÍA (Integrado con tu estado) --- */}
+            {/* CATEGORÍA */}
             <div>
-                <label className="block text-sm font-semibold text-gray-700">Categoría</label>
+                <label className={labelStyles}>Categoría</label>
                 <select
                     required
-                    className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 outline-none text-black bg-white cursor-pointer"
+                    className={`${inputStyles} cursor-pointer appearance-none`}
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 >
@@ -94,79 +99,87 @@ export default function ProductForm({ onSubmit, initialData }: ProductFormProps)
                 </select>
             </div>
 
+            {/* DESCRIPCIÓN */}
             <div>
-                <label className="block text-sm font-semibold text-gray-700">Descripción</label>
+                <label className={labelStyles}>Descripción</label>
                 <textarea
                     required
                     rows={3}
-                    className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 outline-none text-black"
+                    className={inputStyles}
                     placeholder="Describe los ingredientes..."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-                <div>
-                    <label className="block text-sm font-semibold text-gray-700">Precio ($)</label>
+            {/* PRECIO Y STOCK EN GRILLA */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col">
+                    <label className={labelStyles}>Precio ($)</label>
                     <input
-                        type="number"
-                        required
-                        className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 outline-none text-black"
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.price.toString()}
+                        onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9.,]/g, '');
+                            setFormData({ ...formData, price: val });
+                        }}
+                        className={inputStyles}
+                        placeholder="0.00"
                     />
                 </div>
-                <div>
-                    <label className="block text-sm font-semibold text-gray-700">Stock Inicial</label>
+
+                <div className="flex flex-col">
+                    <label className={labelStyles}>Stock</label>
                     <input
-                        type="number"
-                        required
-                        className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 outline-none text-black"
-                        value={formData.stock}
-                        onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
+                        type="text"
+                        inputMode="numeric"
+                        value={formData.stock.toString()}
+                        onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '');
+                            setFormData({ ...formData, stock: val });
+                        }}
+                        className={inputStyles}
+                        placeholder="0"
                     />
                 </div>
             </div>
 
+            {/* IMAGEN Y CLOUDINARY */}
             <div>
-                <label className="block text-sm font-semibold text-gray-700">Imagen del Producto</label>
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="mt-2 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer"
-                />
+                <label className={labelStyles}>Imagen del Producto</label>
+                <div className="mt-2 flex flex-col items-center justify-center border-2 border-dashed border-neutral-700 rounded-2xl p-6 bg-neutral-900/30 hover:border-red-600/50 transition-colors">
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="file-upload"
+                    />
+                    <label htmlFor="file-upload" className="cursor-pointer text-xs font-bold text-red-500 hover:text-red-400 uppercase tracking-widest">
+                        {uploading ? '⏳ Subiendo...' : 'Click para subir foto'}
+                    </label>
 
-                {uploading && (
-                    <div className="mt-2 flex items-center text-red-600 text-sm font-bold">
-                        <span className="animate-pulse">⏳ Subiendo a Cloudinary...</span>
-                    </div>
-                )}
-
-                {formData.image && (
-                    <div className="mt-4">
-                        <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wider">Vista Previa:</p>
-                        <Image
-                            src={formData.image}
-                            alt="Preview"
-                            width={160}
-                            height={160}
-                            className="object-cover rounded-lg border-2 border-red-100 shadow-sm"
-                        />
-                    </div>
-                )}
+                    {formData.image && (
+                        <div className="mt-4 relative w-32 h-32">
+                            <Image
+                                src={formData.image}
+                                alt="Preview"
+                                fill
+                                className="object-cover rounded-xl border border-neutral-700 shadow-xl"
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
 
+            {/* BOTÓN FINAL */}
             <button
                 type="submit"
-                disabled={uploading}
-                className={`w-full py-4 rounded-xl text-white font-black uppercase tracking-widest text-sm shadow-md transition-all ${uploading
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-red-600 hover:bg-red-700 active:scale-95 shadow-red-900/20'
-                    }`}
+                disabled={isSubmitting || uploading}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-red-900/40 disabled:opacity-50 uppercase tracking-widest text-xs active:scale-[0.98]"
             >
-                {uploading ? 'Procesando...' : 'Guardar Producto'}
+                {isSubmitting ? 'GUARDANDO...' : 'GUARDAR PRODUCTO'}
             </button>
         </form>
     );
