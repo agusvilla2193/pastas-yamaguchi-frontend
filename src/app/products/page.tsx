@@ -10,6 +10,7 @@ interface Product {
     id: number;
     name: string;
     description: string;
+    category: string;
     price: number;
     stock: number;
     image?: string;
@@ -26,7 +27,7 @@ export default function ProductsPage() {
     // Lógica de filtrado
     const filteredProducts = products.filter(p => {
         if (filter === 'Todas') return true;
-        return p.name.toLowerCase().includes(filter.toLowerCase());
+        return p.category === filter;
     });
 
     const isLinkAdmin = user?.role === 'admin';
@@ -54,8 +55,10 @@ export default function ProductsPage() {
                 prev.map((p) => (p.id === selectedProduct.id ? { ...p, ...finalData } : p))
             );
             handleCloseModal();
-        } catch (error: any) {
-            console.error("Error al actualizar:", error.response?.data);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error("Error al actualizar:", error.message);
+            }
             alert('No se pudo actualizar el producto');
         }
     };
@@ -118,8 +121,8 @@ export default function ProductsPage() {
                             key={cat}
                             onClick={() => setFilter(cat)}
                             className={`whitespace-nowrap px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all border ${filter === cat
-                                    ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-900/20'
-                                    : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600'
+                                ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-900/20'
+                                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600'
                                 }`}
                         >
                             {cat}
@@ -128,14 +131,15 @@ export default function ProductsPage() {
                 </div>
 
                 {/* --- GRID DE PRODUCTOS --- */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
                     {filteredProducts.length > 0 ? (
                         filteredProducts.map((p) => (
-                            <div key={p.id} className="group bg-neutral-900/50 rounded-[2rem] border border-neutral-800/50 overflow-hidden flex flex-col hover:border-red-600/50 transition-all duration-500 shadow-xl backdrop-blur-sm">
+                            <div key={p.id} className="group bg-neutral-900/50 rounded-[2rem] border border-neutral-800/50 overflow-hidden flex flex-col hover:border-red-600/50 transition-all duration-500 shadow-xl backdrop-blur-sm h-full">
 
-                                <div className="relative h-48 w-full overflow-hidden">
+                                {/* 1. Imagen con altura fija */}
+                                <div className="relative h-56 w-full overflow-hidden flex-shrink-0">
                                     <Image
-                                        src={p.image || 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg'}
+                                        src={p.image || 'https://via.placeholder.com/400x300?text=Yamaguchi'}
                                         alt={p.name}
                                         fill
                                         className="object-cover transition-transform duration-700 group-hover:scale-110"
@@ -143,34 +147,62 @@ export default function ProductsPage() {
                                     <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent opacity-60" />
                                 </div>
 
-                                <div className="p-6 flex flex-col flex-grow">
-                                    <h3 className="text-xl font-bold text-white group-hover:text-red-500 transition-colors mb-1">{p.name}</h3>
-                                    <p className="text-neutral-500 text-xs line-clamp-2 leading-relaxed mb-4">{p.description}</p>
+                                {/* 2. Cuerpo con flex-grow para empujar el footer */}
+                                <div className="p-7 flex flex-col flex-grow">
 
-                                    <div className="mt-auto flex justify-between items-center">
+                                    {/* Badge de categoría alineado a la izquierda */}
+                                    <div className="flex mb-4">
+                                        <span className="bg-red-600/10 text-red-500 text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-md border border-red-600/20 shadow-sm">
+                                            {p.category}
+                                        </span>
+                                    </div>
+
+                                    <h3 className="text-xl font-bold text-white group-hover:text-red-500 transition-colors mb-2 line-clamp-1">
+                                        {p.name}
+                                    </h3>
+
+                                    <p className="text-neutral-500 text-xs line-clamp-3 leading-relaxed mb-6">
+                                        {p.description}
+                                    </p>
+
+                                    {/* 3. Footer alineado siempre al fondo con mt-auto */}
+                                    <div className="mt-auto pt-5 border-t border-neutral-800/50 flex justify-between items-end">
                                         <div className="flex flex-col">
-                                            <span className="text-red-600 text-[10px] uppercase font-black tracking-widest mb-0.5">Precio</span>
-                                            <span className="text-xl font-black text-white">${p.price}</span>
+                                            <span className="text-red-600 text-[10px] uppercase font-black tracking-widest mb-1">Precio</span>
+                                            <span className="text-2xl font-black text-white leading-none">${p.price}</span>
                                         </div>
 
                                         <div className="flex gap-2">
                                             {isLinkAdmin ? (
                                                 <>
-                                                    <button onClick={() => handleOpenEditModal(p)} className="p-2 rounded-xl bg-neutral-800 text-blue-400 hover:bg-blue-600 hover:text-white transition-all">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(p)}
+                                                        className="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-600 hover:text-white transition-all active:scale-90 shadow-lg shadow-blue-900/10"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
                                                     </button>
-                                                    <button onClick={() => handleDelete(p.id)} className="p-2 rounded-xl bg-neutral-800 text-red-500 hover:bg-red-600 hover:text-white transition-all">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                    <button
+                                                        onClick={() => handleDelete(p.id)}
+                                                        className="p-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-600 hover:text-white transition-all active:scale-90 shadow-lg shadow-red-900/10"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
                                                     </button>
                                                 </>
                                             ) : (
-                                                <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-widest">Comprar</button>
+                                                <button className="bg-red-600 hover:bg-red-700 text-white px-7 py-3 rounded-xl text-xs font-black transition-all uppercase tracking-widest shadow-lg shadow-red-900/40 active:scale-95">
+                                                    Comprar
+                                                </button>
                                             )}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         ))
+
                     ) : (
                         <div className="col-span-full py-20 text-center">
                             <p className="text-neutral-500 italic">No hay productos en la categoría <span className="text-red-500 font-bold">{filter}</span></p>
