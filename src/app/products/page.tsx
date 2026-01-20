@@ -45,21 +45,36 @@ export default function ProductsPage() {
     const handleUpdate = async (formData: ProductFormData) => {
         if (!selectedProduct) return;
         try {
+            // Limpiamos los datos para enviar solo lo que el backend necesita
             const finalData = {
-                ...formData,
+                name: formData.name,
+                description: formData.description,
+                category: formData.category,
                 price: Number(formData.price.toString().replace(',', '.')),
                 stock: Number(formData.stock),
+                image: formData.image || selectedProduct.image
             };
+
+            // Cambiamos a PUT si PATCH falla, o revisamos la URL
             await api.patch(`/products/${selectedProduct.id}`, finalData);
+
             setProducts((prev) =>
                 prev.map((p) => (p.id === selectedProduct.id ? { ...p, ...finalData } : p))
             );
+
             handleCloseModal();
         } catch (error: unknown) {
-            if (error instanceof Error) {
-                console.error("Error al actualizar:", error.message);
+            // Verifico si es un error de Axios para acceder a la respuesta del servidor
+            if (error && typeof error === 'object' && 'response' in error) {
+                const axiosError = error as { response: { data: { message?: string } } };
+                console.error("Error del servidor:", axiosError.response.data);
+                alert(axiosError.response.data.message || 'Error al actualizar en el servidor');
+            } else if (error instanceof Error) {
+                console.error("Error de red o JS:", error.message);
+                alert('Error de conexión');
+            } else {
+                alert('Ocurrió un error inesperado');
             }
-            alert('No se pudo actualizar el producto');
         }
     };
 
@@ -216,11 +231,17 @@ export default function ProductsPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
                     <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
                         <div className="p-8 border-b border-neutral-800 flex justify-between items-center">
-                            <h2 className="text-2xl font-bold text-white tracking-tight">Editar: <span className="text-red-500">{selectedProduct.name}</span></h2>
+                            <h2 className="text-2xl font-bold text-white tracking-tight">
+                                Editar: <span className="text-red-500">{selectedProduct.name}</span>
+                            </h2>
                             <button onClick={handleCloseModal} className="text-neutral-500 hover:text-white transition-colors text-3xl">&times;</button>
                         </div>
-                        <div className="p-8 text-black"> {/* Agregado text-black aquí para que el formulario se vea bien si usa fondo blanco */}
-                            <ProductForm onSubmit={handleUpdate} initialData={selectedProduct} />
+                        <div className="p-8 text-black">
+                            <ProductForm
+                                key={selectedProduct.id}
+                                onSubmit={handleUpdate}
+                                initialData={selectedProduct}
+                            />
                         </div>
                     </div>
                 </div>
