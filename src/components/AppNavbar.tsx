@@ -1,79 +1,64 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthCore';
+import { useCart } from '@/context/CartContext';
 
 export const AppNavbar = () => {
-    const { isAuthenticated, user, logout } = useAuth();
-    const router = useRouter();
-    const pathname = usePathname();
-
-    const handleLogout = () => {
-        logout();
-        router.push('/login');
-    };
-
-    const linkBase = "text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300";
-    const linkActive = "text-red-600";
-    const linkInactive = "text-neutral-400 hover:text-white";
+    const { isAuthenticated, logout, user } = useAuth();
+    const { totalItems } = useCart();
 
     return (
-        <nav className="sticky top-0 z-50 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800/50 py-4 px-6">
-            <div className="max-w-7xl mx-auto flex justify-between items-center">
-
+        <nav className="border-b border-neutral-900 bg-black/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+            <div className="max-w-6xl mx-auto flex justify-between items-center">
                 {/* LOGO */}
-                <Link href="/" className="group">
-                    <span className="text-lg font-black italic tracking-tighter text-white group-hover:text-red-600 transition-colors">
-                        YAMAGUCHI <span className="text-red-600 group-hover:text-white">PASTAS</span>
-                    </span>
+                <Link href="/" className="text-xl font-black italic tracking-tighter hover:text-red-600 transition-colors">
+                    YAMAGUCHI <span className="text-red-600">PASTAS</span>
                 </Link>
 
-                {/* NAVEGACIÓN */}
-                <div className="flex items-center space-x-6">
-                    {isAuthenticated ? (
-                        <>
-                            <Link
-                                href="/products"
-                                className={`${linkBase} ${pathname === '/products' ? linkActive : linkInactive}`}
-                            >
-                                Productos
-                            </Link>
+                <div className="flex items-center gap-8">
+                    {/* LINKS DE NAVEGACIÓN */}
+                    <div className="hidden md:flex gap-6 text-[11px] font-black uppercase tracking-[0.2em] text-neutral-400">
+                        <Link href="/products" className="hover:text-white transition-colors">Carta</Link>
+                        <Link href="/nosotros" className="hover:text-white transition-colors">Nuestro Dojo</Link>
+                    </div>
 
-                            <div className="h-4 w-[1px] bg-neutral-800 hidden md:block" />
+                    <div className="flex items-center gap-5 border-l border-neutral-800 pl-8">
+                        {/* CARRITO CON CONTADOR */}
+                        <Link href="/cart" className="relative group p-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-neutral-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
 
-                            <div className="hidden md:block">
-                                <span className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">
-                                    Dojo de <span className="text-white italic">{user?.firstName || 'Chef'}</span>
+                            {totalItems > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-4 h-4 flex items-center justify-center rounded-full animate-in zoom-in duration-300">
+                                    {totalItems}
                                 </span>
-                            </div>
+                            )}
+                        </Link>
 
-                            <button
-                                onClick={handleLogout}
-                                className="bg-white text-black hover:bg-red-600 hover:text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 active:scale-95"
-                            >
-                                Salir
-                            </button>
-                        </>
-                    ) : (
-                        <div className="flex items-center space-x-4">
-                            {/* LINK INGRESAR (Solo texto/borde) */}
+                        {/* BOTÓN LOGIN / USER */}
+                        {isAuthenticated ? (
+                            <div className="flex items-center gap-4">
+                                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest hidden sm:block">
+                                    Osu, {user?.firstName}
+                                </span>
+                                <button
+                                    onClick={logout}
+                                    className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-400"
+                                >
+                                    Salir
+                                </button>
+                            </div>
+                        ) : (
                             <Link
                                 href="/login"
-                                className={`${linkBase} ${pathname === '/login' ? linkActive : linkInactive} px-2`}
+                                className="bg-white text-black px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all"
                             >
-                                Ingresar
+                                Entrar
                             </Link>
-
-                            {/* BOTÓN REGISTRARSE (Rojo destacado) */}
-                            <Link
-                                href="/register"
-                                className="bg-red-600 text-white hover:bg-red-700 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 shadow-lg shadow-red-900/20 active:scale-95"
-                            >
-                                Registrarse
-                            </Link>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
         </nav>

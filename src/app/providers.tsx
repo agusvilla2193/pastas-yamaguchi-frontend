@@ -1,13 +1,14 @@
-'use client'; // ¡Marca este componente como Cliente para permitir el uso del Contexto!
+'use client';
 
-import React from 'react';
-// La ruta ahora es 'doble punto' para ir de 'app' a 'src' y luego a 'context'
-import { AuthProvider } from '../context/AuthProvider';
+import { AuthProvider } from '@/context/AuthProvider';
+import { CartProvider } from '@/context/CartContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
     return (
         <AuthProvider>
-            {children}
+            <CartProvider>
+                {children}
+            </CartProvider>
         </AuthProvider>
     );
 }
