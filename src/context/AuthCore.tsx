@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 import { AxiosInstance } from 'axios';
 
+// Defino la estructura del usuario
 export interface User {
     id: number;
     firstName: string;
@@ -9,6 +10,7 @@ export interface User {
     role: string;
 }
 
+// Defino lo que el Contexto va a ofrecer a toda la app
 export interface AuthContextType {
     token: string | null;
     user: User | null;
@@ -19,6 +21,7 @@ export interface AuthContextType {
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 
 export const useAuth = () => {
     const context = useContext(AuthContext);

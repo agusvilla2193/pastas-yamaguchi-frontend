@@ -1,34 +1,15 @@
-// frontend/src/context/AuthProvider.tsx
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import { AuthContext, User } from './AuthCore';
+import api from '@/lib/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [token, setToken] = useState<string | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [loading, setLoading] = useState(true); // Estado para evitar renders innecesarios
+    const [loading, setLoading] = useState(true);
 
-    // Configuración de Axios
-    const api = useMemo(() => {
-        const instance = axios.create({
-            baseURL: 'http://localhost:3000', // Tu puerto de NestJS
-        });
-
-        instance.interceptors.request.use((config) => {
-            const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-            if (storedToken) {
-                config.headers.Authorization = `Bearer ${storedToken}`;
-            }
-            return config;
-        });
-
-        return instance;
-    }, []);
-
-    // EFECTO CORREGIDO: Carga inicial desde localStorage
     useEffect(() => {
         const initializeAuth = () => {
             const storedToken = localStorage.getItem('token');
@@ -37,8 +18,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (storedToken && storedUser) {
                 try {
                     const userData: User = JSON.parse(storedUser);
-
-                    // Actualizamos los estados
                     setToken(storedToken);
                     setUser(userData);
                     setIsAuthenticated(true);
@@ -48,7 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     localStorage.removeItem('user');
                 }
             }
-            setLoading(false); // Finaliza la carga inicial
+            setLoading(false);
         };
 
         initializeAuth();
@@ -72,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return (
         <AuthContext.Provider value={{ token, user, isAuthenticated, login, logout, api }}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 };

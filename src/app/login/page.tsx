@@ -2,9 +2,11 @@
 
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../context/AuthCore';
+import { useAuth } from '@/context/AuthCore';
+import Link from 'next/link';
+import { toast } from 'sonner';
+import axios from 'axios';
 
-// Define la estructura de la respuesta de la API de Login (asumo que viene de NestJS)
 interface LoginResponse {
     access_token: string;
     user: {
@@ -19,125 +21,109 @@ interface LoginResponse {
 const LoginPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Hooks del Contexto y Router
     const { isAuthenticated, login, api } = useAuth();
     const router = useRouter();
 
-    // Redirección si ya está autenticado (protección de ruta)
     useEffect(() => {
         if (isAuthenticated) {
-            router.push('/products'); // Redirige a la página de productos si ya inició sesión
+            router.push('/products');
         }
     }, [isAuthenticated, router]);
 
-    // Función de envío (handleSubmit)
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        setError(null); // Limpiar errores anteriores
         setIsLoading(true);
 
         try {
-            // Llama a la API de login de tu NestJS
-            // NOTA: Asumo que la ruta de login es POST /auth/login
             const response = await api.post<LoginResponse>('/auth/login', {
                 email,
                 password,
             });
 
             const { access_token, user } = response.data;
-
-            // 1. Llama a la función de contexto para guardar el token y el usuario
             login(access_token, user);
 
-            // 2. Redirigir a la página de productos
+            toast.success(`¡Hola de nuevo, ${user.firstName}!`);
             router.push('/products');
 
-        } catch (err) {
-            console.error('Error de login:', err);
-            // Manejo de errores de NestJS (ej: 401 Unauthorized)
-            setError('Credenciales inválidas. Por favor, verifica tu email y contraseña.');
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                const msg = err.response?.status === 401
+                    ? 'Credenciales incorrectas'
+                    : 'Error al iniciar sesión';
+                toast.error(msg);
+            } else {
+                toast.error('Error de conexión');
+            }
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Si ya está autenticado, no muestra el formulario (la redirección se encargará)
-    if (isAuthenticated) {
-        return (
-            <div className="flex justify-center items-center h-full">
-                <p className="text-xl text-gray-700">Redirigiendo...</p>
-            </div>
-        );
-    }
+    if (isAuthenticated) return null;
+
+    const inputStyles = "w-full bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-white placeholder:text-neutral-600 focus:border-red-600 focus:ring-1 focus:ring-red-600 outline-none transition-all";
 
     return (
-        <div className="flex justify-center items-center min-h-[70vh]">
-            <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-xl border border-gray-200">
-                <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">Iniciar Sesión</h2>
+        <div className="min-h-[80vh] flex items-center justify-center px-6 py-12">
+            <div className="w-full max-w-md space-y-8 bg-neutral-950 border border-neutral-800/50 p-10 rounded-[2.5rem] shadow-2xl">
 
-                {/* Mensaje de Error (Tailwind) */}
-                {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-                        {error}
-                    </div>
-                )}
+                <div className="text-center">
+                    <span className="text-red-600 font-black tracking-[0.3em] uppercase text-[10px]">Acceso al Dojo</span>
+                    <h2 className="text-4xl font-black italic tracking-tighter mt-2">INICIAR <span className="text-red-600">SESIÓN</span></h2>
+                </div>
 
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-semibold mb-2" htmlFor="email">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 ml-4 mb-2 block">
                             Email
                         </label>
                         <input
                             type="email"
-                            id="email"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-150"
-                            placeholder="tucorreo@ejemplo.com"
+                            className={inputStyles}
+                            placeholder="tu@email.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
                         />
                     </div>
 
-                    <div className="mb-6">
-                        <label className="block text-gray-700 text-sm font-semibold mb-2" htmlFor="password">
+                    <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 ml-4 mb-2 block">
                             Contraseña
                         </label>
                         <input
                             type="password"
-                            id="password"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-150"
-                            placeholder="********"
+                            className={inputStyles}
+                            placeholder="••••••••"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
                     </div>
 
-                    <div className="flex items-center justify-between">
-                        <button
-                            type="submit"
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200 disabled:bg-indigo-400"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Cargando...' : 'Entrar'}
-                        </button>
-                    </div>
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-white text-black font-black py-4 rounded-xl hover:bg-red-600 hover:text-white transition-all duration-500 uppercase tracking-widest text-xs disabled:opacity-50 active:scale-95 shadow-xl"
+                    >
+                        {isLoading ? 'VERIFICANDO...' : 'ENTRAR'}
+                    </button>
                 </form>
+
+                <div className="text-center pt-4 border-t border-neutral-900">
+                    <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest">
+                        ¿No tienes cuenta?{' '}
+                        <Link href="/register" className="text-white hover:text-red-600 transition-colors ml-1">
+                            Regístrate aquí
+                        </Link>
+                    </p>
+                </div>
             </div>
         </div>
     );
 };
-
-<div className="mt-4 text-center">
-    <p className="text-sm text-gray-600">
-        ¿No tienes cuenta?{' '}
-        <a href="/register" className="text-indigo-600 hover:underline font-medium">
-            Regístrate aquí
-        </a>
-    </p>
-</div>
 
 export default LoginPage;

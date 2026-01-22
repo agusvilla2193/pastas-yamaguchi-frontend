@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "../styles/globals.css";
-import { AppNavbar } from "../components/AppNavbar";
+import "@/styles/globals.css";
+import { AppNavbar } from "@/components/AppNavbar";
 import { Providers } from "./providers";
+import { Toaster } from 'sonner';
 
-// Configuración de la fuente Inter
 const inter = Inter({
   subsets: ["latin"],
   variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
-  title: "Pastas Yamaguchi",
-  description: "Plataforma de gestión y venta de Pastas.",
+  title: "Yamaguchi Pastas | Tradición Artesanal",
+  description: "La precisión del arte japonés en el corazón de la pasta italiana.",
 };
 
 export default function RootLayout({
@@ -21,29 +21,35 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body className={`${inter.variable} antialiased bg-white text-gray-900`}>
-
-        {/* Providers envuelve toda la aplicación para que el contexto de Auth esté disponible */}
+    <html lang="es" className="dark">
+      <body className={`${inter.variable} font-sans antialiased bg-neutral-950 text-white`}>
         <Providers>
+          {/* Notificaciones elegantes */}
+          <Toaster position="bottom-right" richColors theme="dark" />
 
-          {/* La barra de navegación se muestra en todas las páginas */}
           <AppNavbar />
 
-          {/* El contenedor principal para las páginas (Login, Productos, etc.) */}
-          <main className="container mx-auto px-4 py-8 min-h-[75vh]">
+          <main className="min-h-screen">
             {children}
           </main>
 
-          {/* Un footer sencillo para cerrar el diseño */}
-          <footer className="border-t border-gray-200 bg-gray-50 text-center py-6">
-            <p className="text-gray-500 text-sm">
-              &copy; {new Date().getFullYear()} Pastas Yamaguchi. Todos los derechos reservados.
-            </p>
+          <footer className="border-t border-neutral-900 bg-black py-12 px-6">
+            <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="text-lg font-black italic tracking-tighter">
+                YAMAGUCHI <span className="text-red-600">PASTAS</span>
+              </div>
+
+              <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-[0.3em]">
+                &copy; {new Date().getFullYear()} — Hecho a mano con disciplina
+              </p>
+
+              <div className="flex gap-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                <a href="#" className="hover:text-red-600 transition-colors">Instagram</a>
+                <a href="#" className="hover:text-red-600 transition-colors">Facebook</a>
+              </div>
+            </div>
           </footer>
-
         </Providers>
-
       </body>
     </html>
   );
