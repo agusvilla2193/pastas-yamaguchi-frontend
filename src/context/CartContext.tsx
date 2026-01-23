@@ -11,6 +11,7 @@ interface CartContextType {
     cart: CartItem[];
     addToCart: (product: Product) => void;
     removeFromCart: (productId: number) => void;
+    updateQuantity: (productId: number, newQuantity: number) => void; // <-- Nueva
     clearCart: () => void;
     totalItems: number;
     totalPrice: number;
@@ -19,11 +20,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-    // 1. Inicializamos el estado directamente con una función anónima.
-    // Esto se ejecuta una sola vez al crear el componente y es la forma
-    // recomendada por React para cargar datos de sistemas externos como localStorage.
     const [cart, setCart] = useState<CartItem[]>(() => {
-        // Verificamos si estamos en el navegador (en el servidor localStorage es undefined)
         if (typeof window !== 'undefined') {
             const savedCart = localStorage.getItem('yamaguchi_cart');
             if (savedCart) {
@@ -38,8 +35,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         return [];
     });
 
-    // 2. Sincronizamos el localStorage cuando el carrito cambie.
-    // Esto es una sincronización legítima y no dispara el error de ESLint.
     useEffect(() => {
         localStorage.setItem('yamaguchi_cart', JSON.stringify(cart));
     }, [cart]);
@@ -56,6 +51,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         });
     };
 
+    // --- NUEVA FUNCIÓN ---
+    const updateQuantity = (productId: number, newQuantity: number) => {
+        setCart(prev =>
+            prev.map(item =>
+                item.id === productId ? { ...item, quantity: Math.max(0, newQuantity) } : item
+            ).filter(item => item.quantity > 0) // Si la cantidad llega a 0, se elimina solo
+        );
+    };
+
     const removeFromCart = (productId: number) => {
         setCart(prev => prev.filter(item => item.id !== productId));
     };
@@ -66,7 +70,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     const totalPrice = cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
 
     return (
-        <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, totalItems, totalPrice }}>
+        <CartContext.Provider value={{
+            cart, addToCart, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice
+        }}>
             {children}
         </CartContext.Provider>
     );

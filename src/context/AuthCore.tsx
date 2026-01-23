@@ -4,8 +4,11 @@ import { AxiosInstance } from 'axios';
 // Defino la estructura del usuario
 export interface User {
     id: number;
-    firstName: string;
-    lastName: string;
+    firstName?: string; // opcional
+    first_name?: string; // agregado para compatibilidad con DB
+    lastName?: string;
+    last_name?: string;
+    name?: string;
     email: string;
     role: string;
 }

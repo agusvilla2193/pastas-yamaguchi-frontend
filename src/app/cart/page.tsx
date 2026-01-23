@@ -8,7 +8,8 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 
 export default function CartPage() {
-    const { cart, removeFromCart, totalPrice, clearCart } = useCart();
+    // Agregamos 'updateQuantity' aquí para que TypeScript la reconozca
+    const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
     const { isAuthenticated } = useAuth();
 
     const handleCheckout = () => {
@@ -18,8 +19,7 @@ export default function CartPage() {
             });
             return;
         }
-        // Aca puedo implementar la lógica para finalizar el pedido
-        toast.info('Próximamente: Integración con pagos y envíos');
+        toast.info('Próximamente: Integración con pedidos en el Backend');
     };
 
     if (cart.length === 0) {
@@ -46,20 +46,39 @@ export default function CartPage() {
             </h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                {/* LISTA DE PRODUCTOS */}
                 <div className="lg:col-span-2 space-y-6">
                     {cart.map((item) => (
-                        <div key={item.id} className="flex items-center gap-6 bg-neutral-900/50 p-6 rounded-[2rem] border border-neutral-800/50 backdrop-blur-sm">
-                            <div className="relative h-20 w-20 rounded-2xl overflow-hidden flex-shrink-0 border border-neutral-800">
+                        <div key={item.id} className="flex flex-col sm:flex-row items-center gap-6 bg-neutral-900/50 p-6 rounded-[2rem] border border-neutral-800/50 backdrop-blur-sm">
+                            <div className="relative h-24 w-24 rounded-2xl overflow-hidden flex-shrink-0 border border-neutral-800">
                                 <Image src={item.image || 'https://via.placeholder.com/150'} alt={item.name} fill className="object-cover" />
                             </div>
-                            <div className="flex-grow">
+
+                            <div className="flex-grow text-center sm:text-left">
                                 <h3 className="font-bold text-lg uppercase tracking-tight">{item.name}</h3>
-                                <p className="text-red-500 font-black text-sm">${item.price} x {item.quantity}</p>
+                                <p className="text-neutral-500 text-xs mb-2 italic">{item.category}</p>
+                                <p className="text-red-500 font-black text-sm">${item.price}</p>
                             </div>
+
+                            {/* SELECTOR DE CANTIDAD */}
+                            <div className="flex items-center gap-4 bg-black/40 rounded-xl p-1 border border-neutral-800">
+                                <button
+                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                    className="w-8 h-8 flex items-center justify-center hover:bg-red-600 rounded-lg transition-colors font-bold"
+                                >
+                                    -
+                                </button>
+                                <span className="text-sm font-black w-4 text-center">{item.quantity}</span>
+                                <button
+                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                    className="w-8 h-8 flex items-center justify-center hover:bg-red-600 rounded-lg transition-colors font-bold"
+                                >
+                                    +
+                                </button>
+                            </div>
+
                             <button
                                 onClick={() => removeFromCart(item.id)}
-                                className="p-3 text-neutral-500 hover:text-red-500 transition-colors"
+                                className="p-3 text-neutral-600 hover:text-red-500 transition-colors"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -69,13 +88,13 @@ export default function CartPage() {
                     ))}
 
                     <button onClick={clearCart} className="text-[10px] font-black uppercase tracking-widest text-neutral-600 hover:text-white transition-colors pl-2">
-                        Vaciar carrito
+                        Vaciar carrito completo
                     </button>
                 </div>
 
-                {/* RESUMEN DE COMPRA */}
-                <div className="bg-neutral-900 p-8 rounded-[2.5rem] border border-neutral-800 h-fit sticky top-32">
-                    <h2 className="text-sm font-black uppercase tracking-[0.2em] mb-6 text-neutral-400">Resumen</h2>
+                {/* RESUMEN */}
+                <div className="bg-neutral-900 p-8 rounded-[2.5rem] border border-neutral-800 h-fit lg:sticky lg:top-32">
+                    <h2 className="text-sm font-black uppercase tracking-[0.2em] mb-6 text-neutral-400">Resumen del Dojo</h2>
                     <div className="space-y-4 mb-8">
                         <div className="flex justify-between text-sm">
                             <span className="text-neutral-500">Subtotal</span>
@@ -93,9 +112,9 @@ export default function CartPage() {
 
                     <button
                         onClick={handleCheckout}
-                        className="w-full bg-white hover:bg-red-600 text-black hover:text-white py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl active:scale-95"
+                        className="w-full bg-white hover:bg-red-600 text-black hover:text-white py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 shadow-white/5"
                     >
-                        {isAuthenticated ? 'Finalizar Pedido' : 'Loguearse para comprar'}
+                        {isAuthenticated ? 'Confirmar Pedido' : 'Entrar para Comprar'}
                     </button>
                 </div>
             </div>

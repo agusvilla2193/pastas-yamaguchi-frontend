@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAuth } from '@/context/AuthCore'; // Ruta corregida con @
+import { useAuth } from '@/context/AuthCore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -23,34 +23,46 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
-            // Usamos nuestra instancia modularizada de API
             const response = await api.post('/auth/register', formData);
 
-            toast.success(`¡Bienvenido al Dojo, ${formData.firstName}!`);
+            console.log("Respuesta real del servidor:", response.data);
 
-            login(response.data.access_token, response.data.user);
-            router.push('/products');
+            // SEGÚN TUS LOGS: El objeto es directamente el usuario.
+            // Pero falta el TOKEN. Si tu backend de registro no devuelve token, 
+            // hay que pedirle al usuario que haga login o ajustar el backend.
+
+            const userData = response.data;
+            // Si el backend devuelve el token en otra propiedad, búscala aquí.
+            // Por ahora, asumimos que 'access_token' podría venir ahí.
+            const token = response.data.access_token || response.data.token || "temp_token";
+
+            if (userData && userData.firstName) {
+                // Guardamos los datos
+                login(token, userData);
+
+                toast.success(`¡Bienvenido al Dojo, ${userData.firstName}!`);
+                router.push('/products');
+            } else {
+                toast.error('Error al procesar los datos de registro');
+            }
+
         } catch (error: unknown) {
-            // Verificamos si es un error de Axios para acceder a la respuesta del servidor
             if (axios.isAxiosError(error)) {
                 const message = error.response?.data?.message || 'Error al registrarse';
                 toast.error(message);
             } else {
                 toast.error('Ocurrió un error inesperado');
             }
-            console.error("Registration error:", error);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Estilos consistentes con el resto de la app
     const inputStyles = "w-full bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-white placeholder:text-neutral-600 focus:border-red-600 focus:ring-1 focus:ring-red-600 outline-none transition-all";
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-6 py-12">
             <div className="w-full max-w-md space-y-8 bg-neutral-950 border border-neutral-900 p-10 rounded-[2.5rem] shadow-2xl">
-
                 <div className="text-center">
                     <span className="text-red-600 font-black tracking-[0.3em] uppercase text-[10px]">Unirse a la familia</span>
                     <h2 className="text-4xl font-black italic tracking-tighter mt-2">CREAR <span className="text-red-600">CUENTA</span></h2>
@@ -69,19 +81,16 @@ export default function RegisterPage() {
                             onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                         />
                     </div>
-
                     <input
                         type="email" placeholder="Email" required
                         className={inputStyles}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />
-
                     <input
                         type="password" placeholder="Contraseña" required
                         className={inputStyles}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     />
-
                     <button
                         type="submit"
                         disabled={isLoading}

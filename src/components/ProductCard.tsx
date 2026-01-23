@@ -13,7 +13,10 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardProps) => {
-    const { addToCart } = useCart();
+    const { addToCart, cart } = useCart(); // Traemos el cart para buscar el producto
+
+    // Verificamos si este producto específico ya está en el carrito
+    const itemInCart = cart.find(item => item.id === product.id);
 
     const handleAddToCart = () => {
         addToCart(product);
@@ -24,7 +27,15 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
     };
 
     return (
-        <div className="group bg-neutral-900/50 rounded-[2.5rem] border border-neutral-800/50 overflow-hidden flex flex-col hover:border-red-600/50 transition-all duration-500 shadow-xl backdrop-blur-sm h-full">
+        <div className="group bg-neutral-900/50 rounded-[2.5rem] border border-neutral-800/50 overflow-hidden flex flex-col hover:border-red-600/50 transition-all duration-500 shadow-xl backdrop-blur-sm h-full relative">
+
+            {/* BADGE DE CANTIDAD (Solo si ya está en el carrito) */}
+            {itemInCart && (
+                <div className="absolute top-4 right-4 z-20 bg-red-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg shadow-red-900/50 border border-red-500 animate-in zoom-in duration-300">
+                    {itemInCart.quantity} EN CARRITO
+                </div>
+            )}
+
             {/* IMAGEN */}
             <div className="relative h-56 w-full overflow-hidden flex-shrink-0">
                 <Image
@@ -67,10 +78,10 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
                             />
                         ) : (
                             <button
-                                onClick={handleAddToCart} // ACTIVAMOS EL BOTÓN
+                                onClick={handleAddToCart}
                                 className="bg-red-600 hover:bg-red-700 text-white px-7 py-3 rounded-xl text-xs font-black transition-all uppercase tracking-widest shadow-lg shadow-red-900/40 active:scale-95"
                             >
-                                Comprar
+                                {itemInCart ? 'Agregar más' : 'Comprar'}
                             </button>
                         )}
                     </div>
@@ -80,7 +91,6 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
     );
 };
 
-// Sub-componente para botones de Admin
 const AdminActions = ({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) => (
     <>
         <button

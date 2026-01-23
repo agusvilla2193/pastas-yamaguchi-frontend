@@ -17,14 +17,12 @@ export const AppNavbar = () => {
                 </Link>
 
                 <div className="flex items-center gap-8">
-                    {/* LINKS DE NAVEGACIÓN */}
                     <div className="hidden md:flex gap-6 text-[11px] font-black uppercase tracking-[0.2em] text-neutral-400">
                         <Link href="/products" className="hover:text-white transition-colors">Carta</Link>
                         <Link href="/nosotros" className="hover:text-white transition-colors">Nuestro Dojo</Link>
                     </div>
 
                     <div className="flex items-center gap-5 border-l border-neutral-800 pl-8">
-                        {/* CARRITO CON CONTADOR */}
                         <Link href="/cart" className="relative group p-2">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-neutral-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -37,11 +35,10 @@ export const AppNavbar = () => {
                             )}
                         </Link>
 
-                        {/* BOTÓN LOGIN / USER */}
                         {isAuthenticated ? (
                             <div className="flex items-center gap-4">
                                 <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest hidden sm:block">
-                                    Osu, {user?.firstName}
+                                    Osu, {user?.firstName || user?.first_name || user?.name || 'Guerrero'}
                                 </span>
                                 <button
                                     onClick={logout}
