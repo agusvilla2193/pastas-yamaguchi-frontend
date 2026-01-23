@@ -23,6 +23,7 @@ export const AppNavbar = () => {
                     </div>
 
                     <div className="flex items-center gap-5 border-l border-neutral-800 pl-8">
+                        {/* CARRITO */}
                         <Link href="/cart" className="relative group p-2">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-neutral-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -36,16 +37,29 @@ export const AppNavbar = () => {
                         </Link>
 
                         {isAuthenticated ? (
-                            <div className="flex items-center gap-4">
-                                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest hidden sm:block">
-                                    Konchiwa, {user?.firstName || user?.first_name || user?.name || 'Guerrero'}
-                                </span>
-                                <button
-                                    onClick={logout}
-                                    className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-400"
+                            <div className="flex items-center gap-6">
+                                {/* BOTÓN MIS PEDIDOS */}
+                                <Link
+                                    href="/orders"
+                                    className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-red-600 transition-colors flex items-center gap-2"
                                 >
-                                    Salir
-                                </button>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                    Mis Pedidos
+                                </Link>
+
+                                <div className="flex items-center gap-4">
+                                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest hidden sm:block">
+                                        Konchiwa, {user?.firstName || user?.name || 'Guerrero'}
+                                    </span>
+                                    <button
+                                        onClick={logout}
+                                        className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-400 transition-colors"
+                                    >
+                                        Salir
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <Link
