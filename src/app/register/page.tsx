@@ -25,29 +25,28 @@ export default function RegisterPage() {
         try {
             const response = await api.post('/auth/register', formData);
 
-            console.log("Respuesta real del servidor:", response.data);
+            // 1. Extraemos los datos según la nueva estructura del backend
+            const { access_token, user } = response.data;
 
-            // SEGÚN TUS LOGS: El objeto es directamente el usuario.
-            // Pero falta el TOKEN. Si tu backend de registro no devuelve token, 
-            // hay que pedirle al usuario que haga login o ajustar el backend.
+            console.log("Token recibido:", access_token ? "SI" : "NO");
+            console.log("Usuario recibido:", user);
 
-            const userData = response.data;
-            // Si el backend devuelve el token en otra propiedad, búscala aquí.
-            // Por ahora, asumimos que 'access_token' podría venir ahí.
-            const token = response.data.access_token || response.data.token || "temp_token";
+            // 2. Verificamos que tengamos lo mínimo necesario
+            if (access_token && user) {
+                // Guardamos el token real y el objeto usuario
+                login(access_token, user);
 
-            if (userData && userData.firstName) {
-                // Guardamos los datos
-                login(token, userData);
-
-                toast.success(`¡Bienvenido al Dojo, ${userData.firstName}!`);
+                toast.success(`¡Bienvenido al Dojo, ${user.firstName}!`);
                 router.push('/products');
             } else {
-                toast.error('Error al procesar los datos de registro');
+                // Si falta algo, lo vemos en consola para debuguear
+                console.error("Estructura de respuesta inesperada:", response.data);
+                toast.error('Error: El servidor no envió el token o los datos del usuario');
             }
 
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
+                // Si el backend tira un 409 (Ya existe), lo mostramos acá
                 const message = error.response?.data?.message || 'Error al registrarse';
                 toast.error(message);
             } else {
