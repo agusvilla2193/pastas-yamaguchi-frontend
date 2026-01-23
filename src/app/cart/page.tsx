@@ -1,25 +1,71 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react'; // 1. Agregamos useState
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthCore';
+import { useRouter } from 'next/navigation'; // 2. Importamos useRouter
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import axios from 'axios'; // 3. Importamos axios
+
+// Definimos la interfaz para los errores
+interface BackendError {
+    message: string;
+}
 
 export default function CartPage() {
-    // Agregamos 'updateQuantity' aquí para que TypeScript la reconozca
     const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, api } = useAuth();
+    const router = useRouter();
 
-    const handleCheckout = () => {
+    // 6. Estado para controlar la carga
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleCheckout = async () => {
         if (!isAuthenticated) {
-            toast.error('Debes iniciar sesión para finalizar el pedido', {
-                description: 'Crea una cuenta para que sepamos a dónde enviar tus pastas.'
-            });
+            toast.error('Debes iniciar sesión');
             return;
         }
-        toast.info('Próximamente: Integración con pedidos en el Backend');
+
+        setIsLoading(true);
+
+        try {
+            // 1. LIMPIAMOS EL CARRITO EN EL BACKEND PRIMERO 
+            // Para evitar duplicar cosas si ya había algo viejo en la DB
+            await api.delete('/cart/clear');
+
+            // 2. SINCRONIZAMOS: Enviamos lo que el usuario tiene en el navegador al servidor
+            // Usamos Promise.all para que sea mucho más rápido
+            await Promise.all(
+                cart.map((item) =>
+                    api.post('/cart/add', {
+                        productId: item.id,
+                        quantity: item.quantity
+                    })
+                )
+            );
+
+            // 3. DISPARAMOS LA ORDEN
+            const response = await api.post('/orders');
+
+            if (response.status === 201) {
+                toast.success('¡Pedido realizado con éxito!', {
+                    description: 'Revisa tu historial de compras en el perfil.'
+                });
+                clearCart(); // Limpia el LocalStorage
+                router.push('/products');
+            }
+        } catch (error: unknown) {
+            console.error("Error en el proceso de compra:", error);
+            let msg = 'Error al procesar el pedido';
+            if (axios.isAxiosError(error)) {
+                msg = error.response?.data?.message || msg;
+            }
+            toast.error(msg);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     if (cart.length === 0) {
@@ -59,7 +105,6 @@ export default function CartPage() {
                                 <p className="text-red-500 font-black text-sm">${item.price}</p>
                             </div>
 
-                            {/* SELECTOR DE CANTIDAD */}
                             <div className="flex items-center gap-4 bg-black/40 rounded-xl p-1 border border-neutral-800">
                                 <button
                                     onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -92,7 +137,6 @@ export default function CartPage() {
                     </button>
                 </div>
 
-                {/* RESUMEN */}
                 <div className="bg-neutral-900 p-8 rounded-[2.5rem] border border-neutral-800 h-fit lg:sticky lg:top-32">
                     <h2 className="text-sm font-black uppercase tracking-[0.2em] mb-6 text-neutral-400">Resumen del Dojo</h2>
                     <div className="space-y-4 mb-8">
@@ -112,9 +156,10 @@ export default function CartPage() {
 
                     <button
                         onClick={handleCheckout}
-                        className="w-full bg-white hover:bg-red-600 text-black hover:text-white py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 shadow-white/5"
+                        disabled={isLoading}
+                        className="w-full bg-white hover:bg-red-600 text-black hover:text-white py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 shadow-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isAuthenticated ? 'Confirmar Pedido' : 'Entrar para Comprar'}
+                        {isLoading ? 'Procesando...' : (isAuthenticated ? 'Confirmar Pedido' : 'Entrar para Comprar')}
                     </button>
                 </div>
             </div>
