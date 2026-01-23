@@ -38,7 +38,7 @@ export const AppNavbar = () => {
                         {isAuthenticated ? (
                             <div className="flex items-center gap-4">
                                 <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest hidden sm:block">
-                                    Osu, {user?.firstName || user?.first_name || user?.name || 'Guerrero'}
+                                    Konchiwa, {user?.firstName || user?.first_name || user?.name || 'Guerrero'}
                                 </span>
                                 <button
                                     onClick={logout}
