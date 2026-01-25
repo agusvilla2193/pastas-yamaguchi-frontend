@@ -48,7 +48,7 @@ export default function MyOrdersPage() {
     return (
         <AuthGuard>
             <div className="max-w-5xl mx-auto px-6 py-20 min-h-screen">
-                <h1 className="text-4xl font-black uppercase italic mb-12 tracking-tighter">
+                <h1 className="text-4xl font-black uppercase italic mb-12 tracking-tighter text-white">
                     Mis <span className="text-red-600">Pedidos</span>
                 </h1>
 
@@ -67,40 +67,36 @@ export default function MyOrdersPage() {
                         </a>
                     </div>
                 ) : (
-                    <div className="space-y-8">
+                    <div className="space-y-6">
                         {orders.map((order) => (
-                            <div key={order.id} className="bg-neutral-950 border border-neutral-900 rounded-[2.5rem] p-8 shadow-xl hover:border-neutral-700 transition-all">
-                                <div className="flex flex-col md:flex-row justify-between mb-6 border-b border-neutral-900 pb-6 gap-4">
+                            <div key={order.id} className="bg-neutral-950 border border-neutral-900 rounded-[2rem] p-8 hover:border-red-600/30 transition-all group">
+                                <div className="flex flex-wrap justify-between items-start gap-4">
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-600 mb-1">Orden #{order.id}</p>
-                                        <p className="text-xl font-bold italic">
-                                            {new Date(order.orderDate).toLocaleDateString('es-AR', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric'
-                                            })}
+                                        <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">Orden #{order.id}</p>
+                                        <p className="text-sm text-neutral-500 font-mono">
+                                            {new Date(order.orderDate).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}
                                         </p>
                                     </div>
-                                    <div className="flex flex-col md:items-end justify-center">
-                                        <span className="bg-green-900/20 text-green-500 text-[10px] font-black uppercase px-4 py-1.5 rounded-full border border-green-900/30 w-fit">
+                                    <div className="text-right">
+                                        <p className="text-2xl font-black text-white">${order.total}</p>
+                                        <span className="inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-green-900/20 text-green-500 border border-green-900/50">
                                             {order.status}
                                         </span>
-                                        <p className="text-3xl font-black mt-2 text-white tracking-tighter">${order.total}</p>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">Detalle de pastas</p>
-                                    {order.items.map((item) => (
-                                        <div key={item.id} className="flex justify-between items-center text-sm group">
-                                            <span className="text-neutral-400">
-                                                <span className="text-white font-bold group-hover:text-red-600 transition-colors">{item.quantity}x</span> {item.product.name}
-                                            </span>
-                                            <span className="font-mono text-neutral-500 text-xs">
-                                                ${parseFloat(item.priceAtPurchase).toLocaleString()} c/u
-                                            </span>
-                                        </div>
-                                    ))}
+                                <div className="mt-8 pt-6 border-t border-neutral-900">
+                                    <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-4">Detalle del pedido</p>
+                                    <ul className="space-y-3">
+                                        {order.items.map((item) => (
+                                            <li key={item.id} className="flex justify-between text-sm">
+                                                <span className="text-neutral-400">
+                                                    <span className="text-white font-bold">{item.quantity}x</span> {item.product.name}
+                                                </span>
+                                                <span className="font-mono text-neutral-500">${item.priceAtPurchase} c/u</span>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
                             </div>
                         ))}

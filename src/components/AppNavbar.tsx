@@ -3,23 +3,46 @@
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthCore';
 import { useCart } from '@/context/CartContext';
+import { usePathname } from 'next/navigation';
 
 export const AppNavbar = () => {
     const { isAuthenticated, logout, user } = useAuth();
     const { totalItems } = useCart();
+    const pathname = usePathname();
+
+    // 1. Si la ruta empieza con /admin, no renderizamos este Navbar
+    if (pathname.startsWith('/admin')) {
+        return null;
+    }
 
     return (
         <nav className="border-b border-neutral-900 bg-black/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
             <div className="max-w-6xl mx-auto flex justify-between items-center">
                 {/* LOGO */}
-                <Link href="/" className="text-xl font-black italic tracking-tighter hover:text-red-600 transition-colors">
-                    YAMAGUCHI <span className="text-red-600">PASTAS</span>
+                <Link href="/" className="group text-xl font-black italic tracking-tighter transition-all duration-300">
+                    <span className="text-white group-hover:text-red-600 transition-colors duration-300">
+                        YAMAGUCHI
+                    </span>
+                    <span className="text-red-600 group-hover:text-white transition-colors duration-300 ml-1">
+                        PASTAS
+                    </span>
                 </Link>
 
                 <div className="flex items-center gap-8">
                     <div className="hidden md:flex gap-6 text-[11px] font-black uppercase tracking-[0.2em] text-neutral-400">
                         <Link href="/products" className="hover:text-white transition-colors">Carta</Link>
                         <Link href="/nosotros" className="hover:text-white transition-colors">Nuestro Dojo</Link>
+
+                        {/* 2. LINK AL DASHBOARD (Solo visible para Admin) */}
+                        {user?.role === 'admin' && (
+                            <Link
+                                href="/admin/orders"
+                                className="bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white px-4 py-2 rounded-full border border-red-600/30 text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 group"
+                            >
+                                <span className="w-1.5 h-1.5 bg-red-600 group-hover:bg-white rounded-full animate-pulse"></span>
+                                Dashboard Admin
+                            </Link>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-5 border-l border-neutral-800 pl-8">
