@@ -23,7 +23,7 @@ export default function ProductsPage() {
 
     const fetchProducts = useCallback(async () => {
         try {
-            const response = await api.get('/products');
+            const response = await api.get<Product[]>('/products');
             setProducts(response.data);
         } catch {
             toast.error('No se pudieron cargar las pastas');
@@ -43,7 +43,7 @@ export default function ProductsPage() {
                 price: Number(formData.price.toString().replace(',', '.')),
                 stock: Number(formData.stock)
             };
-            const response = await api.post('/products', finalData);
+            const response = await api.post<Product>('/products', finalData);
             setProducts(prev => [...prev, response.data]);
             toast.success('¡Nueva pasta creada!');
             setIsCreateModalOpen(false);
@@ -61,11 +61,13 @@ export default function ProductsPage() {
                 stock: Number(formData.stock)
             };
             await api.patch(`/products/${selectedProduct.id}`, finalData);
-            // Actualizo el estado local para reflejar los cambios sin recargar
+
             setProducts(prev => prev.map(p =>
                 p.id === selectedProduct.id ? { ...p, ...finalData, id: p.id } : p
             ));
+
             setIsEditModalOpen(false);
+            setSelectedProduct(null);
             toast.success('¡Pasta actualizada!');
         } catch {
             toast.error('Error al actualizar');

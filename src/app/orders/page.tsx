@@ -9,9 +9,7 @@ interface OrderItem {
     id: number;
     quantity: number;
     priceAtPurchase: string;
-    product: {
-        name: string;
-    };
+    product: { name: string; };
 }
 
 interface Order {
@@ -22,15 +20,22 @@ interface Order {
     items: OrderItem[];
 }
 
+// Diccionario de traducción para los estados
+const statusTranslations: Record<string, string> = {
+    'PAID': 'Pagado',
+    'PREPARING': 'En Cocina',
+    'SHIPPED': 'En Camino',
+    'DELIVERED': 'Entregado',
+    'CANCELLED': 'Cancelado'
+};
+
 export default function MyOrdersPage() {
     const { api, isAuthenticated } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (isAuthenticated) {
-            fetchOrders();
-        }
+        if (isAuthenticated) fetchOrders();
     }, [isAuthenticated]);
 
     const fetchOrders = async () => {
@@ -38,8 +43,7 @@ export default function MyOrdersPage() {
             const response = await api.get('/orders');
             setOrders(response.data);
         } catch (error) {
-            console.error("Error fetching orders:", error);
-            toast.error("No pudimos cargar tus pedidos");
+            toast.error("Error al cargar tus pedidos");
         } finally {
             setLoading(false);
         }
@@ -53,21 +57,15 @@ export default function MyOrdersPage() {
                 </h1>
 
                 {loading ? (
-                    <div className="flex flex-col items-center py-20">
-                        <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                        <p className="uppercase font-black italic text-xs tracking-widest text-neutral-500">
-                            Consultando registros...
-                        </p>
+                    <div className="flex flex-col items-center py-20 animate-pulse text-neutral-500 uppercase font-black text-xs tracking-widest">
+                        Consultando registros...
                     </div>
                 ) : orders.length === 0 ? (
-                    <div className="bg-neutral-900/30 border border-neutral-900 rounded-[2rem] p-12 text-center">
-                        <p className="text-neutral-500 italic mb-6">Aún no has realizado ningún pedido en el Dojo.</p>
-                        <a href="/products" className="text-xs font-black uppercase tracking-widest text-red-600 hover:text-white transition-colors">
-                            Ir a la carta →
-                        </a>
+                    <div className="bg-neutral-900/30 border border-neutral-900 rounded-[2rem] p-12 text-center text-neutral-500 italic">
+                        Aún no has realizado pedidos. <br /> <a href="/products" className="text-red-600 mt-4 inline-block not-italic font-black uppercase">Ir a la carta →</a>
                     </div>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="grid gap-6">
                         {orders.map((order) => (
                             <div key={order.id} className="bg-neutral-950 border border-neutral-900 rounded-[2rem] p-8 hover:border-red-600/30 transition-all group">
                                 <div className="flex flex-wrap justify-between items-start gap-4">
@@ -79,20 +77,20 @@ export default function MyOrdersPage() {
                                     </div>
                                     <div className="text-right">
                                         <p className="text-2xl font-black text-white">${order.total}</p>
-                                        <span className="inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-green-900/20 text-green-500 border border-green-900/50">
-                                            {order.status}
+                                        <span className={`inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${order.status === 'PAID' ? 'border-green-900/50 bg-green-900/20 text-green-500' :
+                                                order.status === 'PREPARING' ? 'border-yellow-600/50 bg-yellow-600/10 text-yellow-500' :
+                                                    order.status === 'SHIPPED' ? 'border-blue-500/50 bg-blue-500/10 text-blue-500' :
+                                                        'border-neutral-700 bg-neutral-900/50 text-neutral-500'
+                                            }`}>
+                                            {statusTranslations[order.status] || order.status}
                                         </span>
                                     </div>
                                 </div>
-
                                 <div className="mt-8 pt-6 border-t border-neutral-900">
-                                    <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-4">Detalle del pedido</p>
                                     <ul className="space-y-3">
                                         {order.items.map((item) => (
                                             <li key={item.id} className="flex justify-between text-sm">
-                                                <span className="text-neutral-400">
-                                                    <span className="text-white font-bold">{item.quantity}x</span> {item.product.name}
-                                                </span>
+                                                <span className="text-neutral-400 font-bold"><span className="text-white">{item.quantity}x</span> {item.product.name}</span>
                                                 <span className="font-mono text-neutral-500">${item.priceAtPurchase} c/u</span>
                                             </li>
                                         ))}

@@ -13,12 +13,16 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardProps) => {
-    const { addToCart, cart } = useCart(); // Traemos el cart para buscar el producto
+    const { addToCart, cart } = useCart();
 
-    // Verificamos si este producto específico ya está en el carrito
     const itemInCart = cart.find(item => item.id === product.id);
 
+    // Lógica de Stock
+    const isOutOfStock = product.stock <= 0;
+
     const handleAddToCart = () => {
+        if (isOutOfStock) return; // Doble validación
+
         addToCart(product);
         toast.success(`${product.name} agregada`, {
             description: "Se sumó a tu pedido artesanal.",
@@ -27,10 +31,20 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
     };
 
     return (
-        <div className="group bg-neutral-900/50 rounded-[2.5rem] border border-neutral-800/50 overflow-hidden flex flex-col hover:border-red-600/50 transition-all duration-500 shadow-xl backdrop-blur-sm h-full relative">
+        <div className={`group bg-neutral-900/50 rounded-[2.5rem] border overflow-hidden flex flex-col transition-all duration-500 shadow-xl backdrop-blur-sm h-full relative ${isOutOfStock
+                ? 'border-neutral-800 opacity-60 grayscale-[0.5]'
+                : 'border-neutral-800/50 hover:border-red-600/50'
+            }`}>
 
-            {/* BADGE DE CANTIDAD (Solo si ya está en el carrito) */}
-            {itemInCart && (
+            {/* BADGE DE AGOTADO */}
+            {isOutOfStock && (
+                <div className="absolute top-4 left-4 z-20 bg-neutral-950 text-red-500 text-[9px] font-black px-3 py-1.5 rounded-full shadow-xl border border-red-500/50 uppercase tracking-[0.2em] animate-pulse">
+                    Sin Stock
+                </div>
+            )}
+
+            {/* BADGE DE CANTIDAD */}
+            {itemInCart && !isOutOfStock && (
                 <div className="absolute top-4 right-4 z-20 bg-red-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg shadow-red-900/50 border border-red-500 animate-in zoom-in duration-300">
                     {itemInCart.quantity} EN CARRITO
                 </div>
@@ -42,7 +56,7 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
                     src={product.image || 'https://via.placeholder.com/400x300?text=Yamaguchi'}
                     alt={product.name}
                     fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    className={`object-cover transition-transform duration-700 ${!isOutOfStock && 'group-hover:scale-110'}`}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent opacity-60" />
             </div>
@@ -50,12 +64,16 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
             {/* CONTENIDO */}
             <div className="p-7 flex flex-col flex-grow">
                 <div className="flex mb-4">
-                    <span className="bg-red-600/10 text-red-500 text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-md border border-red-600/20 shadow-sm">
+                    <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-md border shadow-sm ${isOutOfStock
+                            ? 'bg-neutral-800 text-neutral-500 border-neutral-700'
+                            : 'bg-red-600/10 text-red-500 border-red-600/20'
+                        }`}>
                         {product.category}
                     </span>
                 </div>
 
-                <h3 className="text-xl font-bold text-white group-hover:text-red-500 transition-colors mb-2 line-clamp-1 uppercase tracking-tighter">
+                <h3 className={`text-xl font-bold mb-2 line-clamp-1 uppercase tracking-tighter transition-colors ${isOutOfStock ? 'text-neutral-500' : 'text-white group-hover:text-red-500'
+                    }`}>
                     {product.name}
                 </h3>
 
@@ -67,7 +85,9 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
                 <div className="mt-auto pt-5 border-t border-neutral-800/50 flex justify-between items-end">
                     <div className="flex flex-col">
                         <span className="text-red-600 text-[10px] uppercase font-black tracking-widest mb-1">Precio</span>
-                        <span className="text-2xl font-black text-white leading-none">${product.price}</span>
+                        <span className={`text-2xl font-black leading-none ${isOutOfStock ? 'text-neutral-600' : 'text-white'}`}>
+                            ${product.price}
+                        </span>
                     </div>
 
                     <div className="flex gap-2">
@@ -79,9 +99,13 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
                         ) : (
                             <button
                                 onClick={handleAddToCart}
-                                className="bg-red-600 hover:bg-red-700 text-white px-7 py-3 rounded-xl text-xs font-black transition-all uppercase tracking-widest shadow-lg shadow-red-900/40 active:scale-95"
+                                disabled={isOutOfStock}
+                                className={`px-7 py-3 rounded-xl text-xs font-black transition-all uppercase tracking-widest shadow-lg active:scale-95 ${isOutOfStock
+                                        ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed border border-neutral-700'
+                                        : 'bg-red-600 hover:bg-red-700 text-white shadow-red-900/40'
+                                    }`}
                             >
-                                {itemInCart ? 'Agregar más' : 'Comprar'}
+                                {isOutOfStock ? 'Agotado' : (itemInCart ? 'Agregar más' : 'Comprar')}
                             </button>
                         )}
                     </div>
