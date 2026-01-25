@@ -1,63 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useAuth } from '@/context/AuthCore';
-import { useRouter } from 'next/navigation';
+import React from 'react';
 import Link from 'next/link';
-import { toast } from 'sonner';
-import axios from 'axios';
+import { Input } from '@/components/ui/FormElements';
+import { useRegisterForm } from '@/hooks/useRegisterForm';
 
 export default function RegisterPage() {
-    const { api, login } = useAuth();
-    const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-    });
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-
-        try {
-            const response = await api.post('/auth/register', formData);
-
-            // 1. Extraemos los datos según la nueva estructura del backend
-            const { access_token, user } = response.data;
-
-            console.log("Token recibido:", access_token ? "SI" : "NO");
-            console.log("Usuario recibido:", user);
-
-            // 2. Verificamos que tengamos lo mínimo necesario
-            if (access_token && user) {
-                // Guardamos el token real y el objeto usuario
-                login(access_token, user);
-
-                toast.success(`¡Bienvenido al Dojo, ${user.firstName}!`);
-                router.push('/products');
-            } else {
-                // Si falta algo, lo vemos en consola para debuguear
-                console.error("Estructura de respuesta inesperada:", response.data);
-                toast.error('Error: El servidor no envió el token o los datos del usuario');
-            }
-
-        } catch (error: unknown) {
-            if (axios.isAxiosError(error)) {
-                // Si el backend tira un 409 (Ya existe), lo mostramos acá
-                const message = error.response?.data?.message || 'Error al registrarse';
-                toast.error(message);
-            } else {
-                toast.error('Ocurrió un error inesperado');
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const inputStyles = "w-full bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-white placeholder:text-neutral-600 focus:border-red-600 focus:ring-1 focus:ring-red-600 outline-none transition-all";
+    const { formData, isLoading, handleInputChange, executeRegister } = useRegisterForm();
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-6 py-12">
@@ -67,42 +16,43 @@ export default function RegisterPage() {
                     <h2 className="text-4xl font-black italic tracking-tighter mt-2">CREAR <span className="text-red-600">CUENTA</span></h2>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={executeRegister} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                        <input
-                            type="text" placeholder="Nombre" required
-                            className={inputStyles}
-                            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                        <Input
+                            placeholder="Nombre" required
+                            value={formData.firstName}
+                            onChange={(e) => handleInputChange('firstName', e.target.value)}
                         />
-                        <input
-                            type="text" placeholder="Apellido" required
-                            className={inputStyles}
-                            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                        <Input
+                            placeholder="Apellido" required
+                            value={formData.lastName}
+                            onChange={(e) => handleInputChange('lastName', e.target.value)}
                         />
                     </div>
-                    <input
+                    <Input
                         type="email" placeholder="Email" required
-                        className={inputStyles}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
                     />
-                    <input
+                    <Input
                         type="password" placeholder="Contraseña" required
-                        className={inputStyles}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        value={formData.password}
+                        onChange={(e) => handleInputChange('password', e.target.value)}
                     />
+
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-red-600 text-white font-black py-4 rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-900/20 uppercase tracking-widest text-xs disabled:opacity-50"
+                        className="w-full bg-red-600 text-white font-black py-5 rounded-2xl hover:bg-red-700 transition-all shadow-lg shadow-red-900/20 uppercase tracking-[0.2em] text-[10px] disabled:opacity-50 active:scale-[0.98]"
                     >
                         {isLoading ? 'REGISTRANDO...' : 'REGISTRARSE'}
                     </button>
                 </form>
 
                 <div className="text-center pt-4">
-                    <p className="text-neutral-500 text-xs uppercase tracking-widest">
+                    <p className="text-neutral-500 text-[10px] uppercase font-black tracking-widest">
                         ¿Ya tienes cuenta?{' '}
-                        <Link href="/login" className="text-white font-bold hover:text-red-600 transition-colors">
+                        <Link href="/login" className="text-white hover:text-red-600 transition-colors ml-1">
                             Inicia Sesión
                         </Link>
                     </p>

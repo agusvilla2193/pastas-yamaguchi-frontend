@@ -1,86 +1,51 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { AuthContext, User } from './AuthCore';
+import React, { useEffect, useMemo, useCallback } from 'react';
+import { AuthContext } from './AuthCore';
 import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { User } from '@/types/auth';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [token, setToken] = useState<string | null>(null);
-    const [user, setUser] = useState<User | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [loading, setLoading] = useState(true);
-
+    const [token, setToken] = useLocalStorage<string | null>('token', null);
+    const [user, setUser] = useLocalStorage<User | null>('user', null);
     const router = useRouter();
 
-    // 1. Inicialización de la sesión desde el almacenamiento local
-    useEffect(() => {
-        const initializeAuth = () => {
-            const storedToken = localStorage.getItem('token');
-            const storedUser = localStorage.getItem('user');
 
-            if (storedToken && storedUser) {
-                try {
-                    const userData: User = JSON.parse(storedUser);
-                    setToken(storedToken);
-                    setUser(userData);
-                    setIsAuthenticated(true);
-                } catch (e) {
-                    console.error("Error al recuperar sesión del localStorage:", e);
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                }
-            }
-            setLoading(false);
-        };
-        initializeAuth();
-    }, []);
+    const isAuthenticated = !!token;
 
-    // 2. INTERCEPTOR: Pega el Token a cada petición de Axios (Vital para /orders)
     useEffect(() => {
-        const requestInterceptor = api.interceptors.request.use((config) => {
-            const currentToken = localStorage.getItem('token');
-            if (currentToken) {
-                config.headers.Authorization = `Bearer ${currentToken}`;
+        const interceptor = api.interceptors.request.use((config) => {
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
             }
             return config;
         });
 
-        // Limpieza del interceptor cuando el componente se desmonte
-        return () => {
-            api.interceptors.request.eject(requestInterceptor);
-        };
-    }, []);
+        return () => api.interceptors.request.eject(interceptor);
+    }, [token]);
 
-    // 3. Función de Login memoizada
     const login = useCallback((newToken: string, newUser: User) => {
-        localStorage.setItem('token', newToken);
-        localStorage.setItem('user', JSON.stringify(newUser));
         setToken(newToken);
         setUser(newUser);
-        setIsAuthenticated(true);
-    }, []);
+    }, [setToken, setUser]);
 
-    // 4. Función de Logout memoizada
     const logout = useCallback(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
         setToken(null);
         setUser(null);
-        setIsAuthenticated(false);
         router.push('/');
-    }, [router]);
+    }, [router, setToken, setUser]);
 
-    // 5. El objeto de valor del contexto con todas las dependencias para el compilador
     const contextValue = useMemo(() => ({
         token,
         user,
-        loading,
+        loading: false, // Forzamos loading a false ya que useLocalStorage es síncrono en el cliente
         isAuthenticated,
         login,
         logout,
         api
-    }), [token, user, loading, isAuthenticated, login, logout]);
+    }), [token, user, isAuthenticated, login, logout]);
 
     return (
         <AuthContext.Provider value={contextValue}>

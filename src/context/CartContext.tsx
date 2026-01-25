@@ -1,77 +1,68 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { Product } from '@/types/product';
-
-interface CartItem extends Product {
-    quantity: number;
-}
-
-interface CartContextType {
-    cart: CartItem[];
-    addToCart: (product: Product) => void;
-    removeFromCart: (productId: number) => void;
-    updateQuantity: (productId: number, newQuantity: number) => void;
-    clearCart: () => void;
-    totalItems: number;
-    totalPrice: number;
-}
+import { CartItem, CartContextType } from '@/types/cart';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-    const [cart, setCart] = useState<CartItem[]>(() => {
-        if (typeof window !== 'undefined') {
-            const savedCart = localStorage.getItem('yamaguchi_cart');
-            if (savedCart) {
-                try {
-                    return JSON.parse(savedCart);
-                } catch (error) {
-                    console.error("Error al inicializar el carrito", error);
-                    return [];
-                }
-            }
-        }
-        return [];
-    });
+    // Usamos el hook modularizado
+    const [cart, setCart] = useLocalStorage<CartItem[]>('yamaguchi_cart', []);
 
-    useEffect(() => {
-        localStorage.setItem('yamaguchi_cart', JSON.stringify(cart));
-    }, [cart]);
+    // Aseguramos que 'cart' sea siempre un array antes de operar
+    const safeCart = useMemo(() => Array.isArray(cart) ? cart : [], [cart]);
 
     const addToCart = (product: Product) => {
         setCart(prev => {
-            const existing = prev.find(item => item.id === product.id);
+            const currentCart = Array.isArray(prev) ? prev : [];
+            const existing = currentCart.find(item => item.id === product.id);
             if (existing) {
-                return prev.map(item =>
+                return currentCart.map(item =>
                     item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
                 );
             }
-            return [...prev, { ...product, quantity: 1 }];
+            return [...currentCart, { ...product, quantity: 1 }];
         });
     };
 
-    // --- NUEVA FUNCIÓN ---
     const updateQuantity = (productId: number, newQuantity: number) => {
-        setCart(prev =>
-            prev.map(item =>
+        setCart(prev => {
+            const currentCart = Array.isArray(prev) ? prev : [];
+            return currentCart.map(item =>
                 item.id === productId ? { ...item, quantity: Math.max(0, newQuantity) } : item
-            ).filter(item => item.quantity > 0) // Si la cantidad llega a 0, se elimina solo
-        );
+            ).filter(item => item.quantity > 0);
+        });
     };
 
     const removeFromCart = (productId: number) => {
-        setCart(prev => prev.filter(item => item.id !== productId));
+        setCart(prev => {
+            const currentCart = Array.isArray(prev) ? prev : [];
+            return currentCart.filter(item => item.id !== productId);
+        });
     };
 
     const clearCart = () => setCart([]);
 
-    const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
-    const totalPrice = cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
+    // Cálculos memorizados
+    const totalItems = useMemo(() =>
+        safeCart.reduce((acc, item) => acc + item.quantity, 0),
+        [safeCart]);
+
+    const totalPrice = useMemo(() =>
+        safeCart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0),
+        [safeCart]);
 
     return (
         <CartContext.Provider value={{
-            cart, addToCart, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice
+            cart: safeCart,
+            addToCart,
+            removeFromCart,
+            updateQuantity,
+            clearCart,
+            totalItems,
+            totalPrice
         }}>
             {children}
         </CartContext.Provider>

@@ -3,17 +3,43 @@
 import { AdminGuard } from '@/components/auth/AdminGuard';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import React from 'react';
+
+// --- CONFIGURACIÓN DE NAVEGACIÓN ---
+interface NavItem {
+    label: string;
+    href: string;
+    icon: React.ReactNode;
+}
+
+const NAV_ITEMS: NavItem[] = [
+    {
+        label: 'Órdenes',
+        href: '/admin/orders',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+        ),
+    },
+    {
+        label: 'Productos',
+        href: '/admin/products',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+        ),
+    },
+];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
 
-    // Función auxiliar para saber si el link está activo
-    const isActive = (path: string) => pathname === path;
-
     return (
         <AdminGuard>
             <div className="flex min-h-screen bg-black">
-                {/* SIDEBAR MEJORADO */}
+                {/* SIDEBAR */}
                 <aside className="w-72 bg-neutral-950 border-r border-neutral-900 p-8 flex flex-col shrink-0 sticky top-0 h-screen">
                     <div className="mb-12">
                         <h2 className="text-white font-black text-2xl italic tracking-tighter">
@@ -23,33 +49,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
 
                     <nav className="flex flex-col gap-3">
-                        {/* BOTÓN ÓRDENES */}
-                        <Link
-                            href="/admin/orders"
-                            className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border ${isActive('/admin/orders')
-                                    ? 'bg-red-600 text-white border-red-500 shadow-[0_0_20px_rgba(220,38,38,0.2)]'
-                                    : 'text-neutral-500 border-transparent hover:bg-neutral-900 hover:text-white'
-                                }`}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            <span className="text-[11px] font-black uppercase tracking-widest">Órdenes</span>
-                        </Link>
-
-                        {/* BOTÓN PRODUCTOS */}
-                        <Link
-                            href="/admin/products"
-                            className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border ${isActive('/admin/products')
-                                    ? 'bg-red-600 text-white border-red-500 shadow-[0_0_20px_rgba(220,38,38,0.2)]'
-                                    : 'text-neutral-500 border-transparent hover:bg-neutral-900 hover:text-white'
-                                }`}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                            </svg>
-                            <span className="text-[11px] font-black uppercase tracking-widest">Productos</span>
-                        </Link>
+                        {NAV_ITEMS.map((item) => {
+                            const active = pathname === item.href;
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border ${active
+                                            ? 'bg-red-600 text-white border-red-500 shadow-[0_10px_30px_rgba(220,38,38,0.15)]'
+                                            : 'text-neutral-500 border-transparent hover:bg-neutral-900 hover:text-white'
+                                        }`}
+                                >
+                                    {item.icon}
+                                    <span className="text-[11px] font-black uppercase tracking-widest">{item.label}</span>
+                                </Link>
+                            );
+                        })}
                     </nav>
 
                     {/* BOTÓN VOLVER ABAJO */}
@@ -63,9 +78,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </aside>
 
-                {/* CONTENIDO PRINCIPAL CON SCROLL INDEPENDIENTE */}
+                {/* CONTENIDO PRINCIPAL */}
                 <main className="flex-1 h-screen overflow-y-auto bg-black p-12">
-                    {children}
+                    <div className="max-w-6xl mx-auto animate-in fade-in duration-500">
+                        {children}
+                    </div>
                 </main>
             </div>
         </AdminGuard>

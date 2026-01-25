@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, FormEvent, useEffect } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthCore';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { Input } from '@/components/ui/FormElements';
 
 interface LoginResponse {
     access_token: string;
@@ -18,6 +19,11 @@ interface LoginResponse {
     };
 }
 
+// Helpers para hidratación segura
+const subscribe = () => () => { };
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 const LoginPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -26,13 +32,17 @@ const LoginPage: React.FC = () => {
     const { isAuthenticated, login, api } = useAuth();
     const router = useRouter();
 
-    useEffect(() => {
-        if (isAuthenticated) {
+    // Blindaje contra errores de hidratación de Next.js
+    const isClient = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+    // Redirección si ya está autenticado
+    React.useEffect(() => {
+        if (isClient && isAuthenticated) {
             router.push('/products');
         }
-    }, [isAuthenticated, router]);
+    }, [isClient, isAuthenticated, router]);
 
-    const handleSubmit = async (e: FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
@@ -62,27 +72,24 @@ const LoginPage: React.FC = () => {
         }
     };
 
-    if (isAuthenticated) return null;
-
-    const inputStyles = "w-full bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-white placeholder:text-neutral-600 focus:border-red-600 focus:ring-1 focus:ring-red-600 outline-none transition-all";
+    if (!isClient || isAuthenticated) return null;
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-6 py-12">
-            <div className="w-full max-w-md space-y-8 bg-neutral-950 border border-neutral-800/50 p-10 rounded-[2.5rem] shadow-2xl">
+            <div className="w-full max-w-md space-y-8 bg-neutral-950 border border-neutral-800/50 p-10 rounded-[2.5rem] shadow-2xl animate-in fade-in zoom-in duration-500">
 
                 <div className="text-center">
                     <span className="text-red-600 font-black tracking-[0.3em] uppercase text-[10px]">Acceso al Dojo</span>
-                    <h2 className="text-4xl font-black italic tracking-tighter mt-2">INICIAR <span className="text-red-600">SESIÓN</span></h2>
+                    <h2 className="text-4xl font-black italic tracking-tighter mt-2 text-white">
+                        INICIAR <span className="text-red-600">SESIÓN</span>
+                    </h2>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 ml-4 mb-2 block">
-                            Email
-                        </label>
-                        <input
+                        <Label>Email</Label>
+                        <Input
                             type="email"
-                            className={inputStyles}
                             placeholder="tu@email.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -91,12 +98,9 @@ const LoginPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 ml-4 mb-2 block">
-                            Contraseña
-                        </label>
-                        <input
+                        <Label>Contraseña</Label>
+                        <Input
                             type="password"
-                            className={inputStyles}
                             placeholder="••••••••"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -107,13 +111,13 @@ const LoginPage: React.FC = () => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-white text-black font-black py-4 rounded-xl hover:bg-red-600 hover:text-white transition-all duration-500 uppercase tracking-widest text-xs disabled:opacity-50 active:scale-95 shadow-xl"
+                        className="w-full bg-white text-black font-black py-4 rounded-xl hover:bg-red-600 hover:text-white transition-all duration-500 uppercase tracking-widest text-[10px] disabled:opacity-50 active:scale-95 shadow-xl"
                     >
                         {isLoading ? 'VERIFICANDO...' : 'ENTRAR'}
                     </button>
                 </form>
 
-                <div className="text-center pt-4 border-t border-neutral-900">
+                <div className="text-center pt-6 border-t border-neutral-900">
                     <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest">
                         ¿No tienes cuenta?{' '}
                         <Link href="/register" className="text-white hover:text-red-600 transition-colors ml-1">
@@ -125,5 +129,12 @@ const LoginPage: React.FC = () => {
         </div>
     );
 };
+
+// Sub-componente interno para mantener limpio el form
+const Label = ({ children }: { children: React.ReactNode }) => (
+    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 ml-4 mb-2 block">
+        {children}
+    </label>
+);
 
 export default LoginPage;
