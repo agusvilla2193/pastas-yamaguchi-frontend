@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthCore';
 import { toast } from 'sonner';
 
-// Definimos la estructura exacta para evitar el "any"
 interface OrderProduct {
     id: number;
     name: string;
@@ -39,7 +38,6 @@ export default function AdminOrdersPage() {
     useEffect(() => {
         const fetchAllOrders = async () => {
             try {
-                // Llamamos al endpoint maestro que creamos en el controlador
                 const response = await api.get<AdminOrder[]>('/orders/all');
                 setOrders(response.data);
             } catch (error) {
@@ -52,6 +50,21 @@ export default function AdminOrdersPage() {
 
         fetchAllOrders();
     }, [api]);
+
+    // Función para manejar el cambio de estado en el Backend
+    const handleStatusChange = async (orderId: number, newStatus: string) => {
+        try {
+            await api.patch(`/orders/${orderId}/status`, { status: newStatus });
+
+            // Actualizamos el estado local inmediatamente
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+
+            toast.success(`Orden #${orderId} actualizada a ${newStatus}`);
+        } catch (error) {
+            console.error(error);
+            toast.error("No se pudo actualizar el estado");
+        }
+    };
 
     return (
         <div className="animate-in fade-in duration-700">
@@ -107,9 +120,23 @@ export default function AdminOrdersPage() {
                                         ${Number(order.total).toLocaleString()}
                                     </td>
                                     <td className="p-6">
-                                        <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase border border-red-900/50 bg-red-900/10 text-red-500">
-                                            {order.status}
-                                        </span>
+                                        {/* SELECTOR DINÁMICO DE ESTADO */}
+                                        <select
+                                            value={order.status}
+                                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                                            className={`bg-black text-[10px] font-black uppercase px-3 py-1.5 rounded-full border transition-all cursor-pointer outline-none appearance-none text-center hover:border-white/40 ${order.status === 'PAID' ? 'border-green-900/50 text-green-500' :
+                                                    order.status === 'PREPARING' ? 'border-yellow-600/50 text-yellow-500' :
+                                                        order.status === 'SHIPPED' ? 'border-blue-500/50 text-blue-500' :
+                                                            order.status === 'DELIVERED' ? 'border-neutral-700 text-neutral-500' :
+                                                                'border-red-900/50 text-red-500'
+                                                }`}
+                                        >
+                                            <option value="PAID">Pagado</option>
+                                            <option value="PREPARING">En Cocina</option>
+                                            <option value="SHIPPED">En Camino</option>
+                                            <option value="DELIVERED">Entregado</option>
+                                            <option value="CANCELLED">Cancelado</option>
+                                        </select>
                                     </td>
                                 </tr>
                             ))
