@@ -8,7 +8,6 @@ export function useProducts() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Estados de UI
     const [modalState, setModalState] = useState<{
         isOpen: boolean;
         type: 'create' | 'edit' | null;
@@ -17,7 +16,8 @@ export function useProducts() {
 
     const fetchProducts = useCallback(async () => {
         try {
-            const response = await api.get<Product[]>('/products');
+            // CAMBIO: Ahora la ruta es /admin/products
+            const response = await api.get<Product[]>('/admin/products');
             setProducts(response.data);
         } catch {
             toast.error('No se pudieron cargar las pastas');
@@ -41,12 +41,16 @@ export function useProducts() {
             };
 
             if (modalState.type === 'create') {
-                const res = await api.post<Product>('/products', finalData);
+                // CAMBIO: Ruta /admin/products
+                const res = await api.post<Product>('/admin/products', finalData);
                 setProducts(prev => [...prev, res.data]);
                 toast.success('¡Nueva pasta creada!');
             } else {
-                await api.patch(`/products/${modalState.selectedProduct?.id}`, finalData);
-                setProducts(prev => prev.map(p => p.id === modalState.selectedProduct?.id ? { ...p, ...finalData } : p));
+                // CAMBIO: Ruta /admin/products/:id
+                await api.patch(`/admin/products/${modalState.selectedProduct?.id}`, finalData);
+                setProducts(prev => prev.map(p =>
+                    p.id === modalState.selectedProduct?.id ? { ...p, ...finalData } : p
+                ));
                 toast.success('¡Pasta actualizada!');
             }
             closeModal();
@@ -61,7 +65,8 @@ export function useProducts() {
                 label: 'Eliminar',
                 onClick: async () => {
                     try {
-                        await api.delete(`/products/${id}`);
+                        // CAMBIO: Ruta /admin/products/:id
+                        await api.delete(`/admin/products/${id}`);
                         setProducts(prev => prev.filter(p => p.id !== id));
                         toast.success('Producto eliminado');
                     } catch {
