@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthCore';
 import { useCart } from '@/context/CartContext';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { User } from '@/types/auth';
+import { toast } from 'sonner';
 
 export const AppNavbar = () => {
     const { isAuthenticated, logout, user } = useAuth();
@@ -33,17 +34,18 @@ export const AppNavbar = () => {
                     </div>
 
                     <div className="flex items-center gap-5 border-l border-neutral-800 pl-8">
-                        <CartBadge count={totalItems} />
+                        {/* Pasamos isAuthenticated al Badge del carrito */}
+                        <CartBadge count={totalItems} isAuthenticated={isAuthenticated} />
 
-                        {/* Si no estamos en el cliente, mostramos un espacio vacío 
-                           para que el HTML inicial sea ligero y no cause errores de hidratación.
-                        */}
                         {!isClient ? (
                             <div className="w-20" />
                         ) : isAuthenticated ? (
                             <UserActions user={user} logout={logout} />
                         ) : (
-                            <Link href="/login" className="bg-white text-black px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300">
+                            <Link
+                                href={`/login?redirect=${pathname}`}
+                                className="bg-white text-black px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300"
+                            >
                                 Entrar
                             </Link>
                         )}
@@ -73,20 +75,41 @@ const AdminLink = () => (
     </Link>
 );
 
-const CartBadge = ({ count }: { count: number }) => (
-    <Link href="/cart" className="relative group p-2">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-neutral-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-        </svg>
-        {count > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-4 h-4 flex items-center justify-center rounded-full">
-                {count}
-            </span>
-        )}
-    </Link>
-);
+const CartBadge = ({ count, isAuthenticated }: { count: number, isAuthenticated: boolean }) => {
+    const router = useRouter();
+    const pathname = usePathname();
 
-// Cambié "any" por "User | null" para que el linter esté feliz
+    const handleCartClick = (e: React.MouseEvent) => {
+        if (!isAuthenticated) {
+            e.preventDefault(); // Bloquea la navegación al carrito
+            toast.error("Acceso restringido", {
+                description: "Debes iniciar sesión para ver tu pedido.",
+                action: {
+                    label: "INGRESAR",
+                    onClick: () => router.push(`/login?redirect=${pathname}`)
+                }
+            });
+        }
+    };
+
+    return (
+        <Link
+            href="/cart"
+            onClick={handleCartClick}
+            className="relative group p-2"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-neutral-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            {count > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-4 h-4 flex items-center justify-center rounded-full animate-in zoom-in">
+                    {count}
+                </span>
+            )}
+        </Link>
+    );
+};
+
 const UserActions = ({ user, logout }: { user: User | null; logout: () => void }) => (
     <div className="flex items-center gap-6">
         <Link

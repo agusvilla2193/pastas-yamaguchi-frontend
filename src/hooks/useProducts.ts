@@ -1,10 +1,11 @@
+'use client';
+
 import { useState, useCallback, useEffect } from 'react';
-import { useAuth } from '@/context/AuthCore';
+import api from '@/lib/api';
 import { Product, ProductFormData } from '@/types/product';
 import { toast } from 'sonner';
 
 export function useProducts() {
-    const { api } = useAuth();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -16,17 +17,20 @@ export function useProducts() {
 
     const fetchProducts = useCallback(async () => {
         try {
-            // CAMBIO: Ahora la ruta es /admin/products
-            const response = await api.get<Product[]>('/admin/products');
+            setLoading(true);
+            const response = await api.get<Product[]>('/products');
             setProducts(response.data);
-        } catch {
+        } catch (error) {
+            console.error('Error fetching products:', error);
             toast.error('No se pudieron cargar las pastas');
         } finally {
             setLoading(false);
         }
-    }, [api]);
+    }, []); // Quitamos 'api' de las dependencias ya que es una importación estática
 
-    useEffect(() => { fetchProducts(); }, [fetchProducts]);
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
 
     const openCreate = () => setModalState({ isOpen: true, type: 'create', selectedProduct: null });
     const openEdit = (product: Product) => setModalState({ isOpen: true, type: 'edit', selectedProduct: product });
@@ -41,13 +45,11 @@ export function useProducts() {
             };
 
             if (modalState.type === 'create') {
-                // CAMBIO: Ruta /admin/products
-                const res = await api.post<Product>('/admin/products', finalData);
+                const res = await api.post<Product>('/products', finalData);
                 setProducts(prev => [...prev, res.data]);
                 toast.success('¡Nueva pasta creada!');
             } else {
-                // CAMBIO: Ruta /admin/products/:id
-                await api.patch(`/admin/products/${modalState.selectedProduct?.id}`, finalData);
+                await api.patch(`/products/${modalState.selectedProduct?.id}`, finalData);
                 setProducts(prev => prev.map(p =>
                     p.id === modalState.selectedProduct?.id ? { ...p, ...finalData } : p
                 ));
@@ -65,8 +67,7 @@ export function useProducts() {
                 label: 'Eliminar',
                 onClick: async () => {
                     try {
-                        // CAMBIO: Ruta /admin/products/:id
-                        await api.delete(`/admin/products/${id}`);
+                        await api.delete(`/products/${id}`);
                         setProducts(prev => prev.filter(p => p.id !== id));
                         toast.success('Producto eliminado');
                     } catch {

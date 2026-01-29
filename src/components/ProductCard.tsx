@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import { Product } from '@/types/product';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthCore'; // Importamos el contexto de Auth
+import { useRouter } from 'next/navigation'; // Importamos el router de Next
 import { toast } from 'sonner';
 
 interface ProductCardProps {
@@ -14,12 +16,28 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardProps) => {
     const { addToCart, cart } = useCart();
+    const { isAuthenticated } = useAuth(); // Extraemos el estado de sesión
+    const router = useRouter();
 
     const itemInCart = cart?.find(item => item.id === product.id);
     const isOutOfStock = product.stock <= 0;
 
     const handleAddToCart = () => {
         if (isOutOfStock) return;
+
+        // BLOQUEO DE SEGURIDAD: Si no está logueado, redirige al login con un aviso
+        if (!isAuthenticated) {
+            toast.error('¡Inicia sesión para pedir!', {
+                description: "Debes ser parte del dojo para realizar un pedido.",
+                action: {
+                    label: 'INGRESAR',
+                    onClick: () => router.push('/login')
+                },
+            });
+            return;
+        }
+
+        // Si está logueado, procede normalmente
         addToCart(product);
         toast.success(`${product.name} agregada`, {
             description: "Se sumó a tu pedido artesanal.",
@@ -27,7 +45,6 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
         });
     };
 
-    // Estilos dinámicos extraídos para mejorar legibilidad
     const cardStatusStyles = isOutOfStock
         ? 'border-neutral-800 opacity-60 grayscale-[0.5]'
         : 'border-neutral-800/50 hover:border-red-600/50';
@@ -37,7 +54,6 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
 
             <Badges isOutOfStock={isOutOfStock} quantity={itemInCart?.quantity} />
 
-            {/* SECCIÓN IMAGEN */}
             <div className="relative h-56 w-full overflow-hidden flex-shrink-0">
                 <Image
                     src={product.image || 'https://via.placeholder.com/400x300?text=Yamaguchi'}
@@ -48,7 +64,6 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
                 <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent opacity-60" />
             </div>
 
-            {/* CUERPO DE LA TARJETA */}
             <div className="p-7 flex flex-col flex-grow">
                 <CategoryTag category={product.category} isOutOfStock={isOutOfStock} />
 
@@ -60,7 +75,6 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
                     {product.description}
                 </p>
 
-                {/* FOOTER: PRECIO Y ACCIONES */}
                 <div className="mt-auto pt-5 border-t border-neutral-800/50 flex justify-between items-end">
                     <div className="flex flex-col">
                         <span className="text-red-600 text-[10px] uppercase font-black tracking-widest mb-1">Precio</span>
@@ -77,6 +91,7 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
                                 onClick={handleAddToCart}
                                 isOutOfStock={isOutOfStock}
                                 hasItem={!!itemInCart}
+                                isAuthenticated={isAuthenticated} // Pasamos el estado al botón
                             />
                         )}
                     </div>
@@ -86,8 +101,37 @@ export const ProductCard = ({ product, isAdmin, onEdit, onDelete }: ProductCardP
     );
 };
 
-// --- COMPONENTES DE SOPORTE (Sub-componentes internos) ---
+// --- SUB-COMPONENTES ACTUALIZADOS ---
 
+const BuyButton = ({
+    onClick,
+    isOutOfStock,
+    hasItem,
+    isAuthenticated
+}: {
+    onClick: () => void;
+    isOutOfStock: boolean;
+    hasItem: boolean;
+    isAuthenticated: boolean;
+}) => (
+    <button
+        onClick={onClick}
+        disabled={isOutOfStock}
+        className={`px-7 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest shadow-lg active:scale-95 ${isOutOfStock
+                ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed border border-neutral-700'
+                : 'bg-red-600 hover:bg-red-700 text-white shadow-red-900/40'
+            }`}
+    >
+        {isOutOfStock
+            ? 'Agotado'
+            : !isAuthenticated
+                ? 'Ingresar para comprar'
+                : (hasItem ? 'Agregar más' : 'Comprar')
+        }
+    </button>
+);
+
+// Los demás sub-componentes se mantienen igual...
 const Badges = ({ isOutOfStock, quantity }: { isOutOfStock: boolean; quantity?: number }) => (
     <>
         {isOutOfStock && (
@@ -105,24 +149,10 @@ const Badges = ({ isOutOfStock, quantity }: { isOutOfStock: boolean; quantity?: 
 
 const CategoryTag = ({ category, isOutOfStock }: { category: string; isOutOfStock: boolean }) => (
     <div className="flex mb-4">
-        <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-md border shadow-sm ${isOutOfStock ? 'bg-neutral-800 text-neutral-500 border-neutral-700' : 'bg-red-600/10 text-red-500 border-red-600/20'
-            }`}>
+        <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-md border shadow-sm ${isOutOfStock ? 'bg-neutral-800 text-neutral-500 border-neutral-700' : 'bg-red-600/10 text-red-500 border-red-600/20'}`}>
             {category}
         </span>
     </div>
-);
-
-const BuyButton = ({ onClick, isOutOfStock, hasItem }: { onClick: () => void; isOutOfStock: boolean; hasItem: boolean }) => (
-    <button
-        onClick={onClick}
-        disabled={isOutOfStock}
-        className={`px-7 py-3 rounded-xl text-xs font-black transition-all uppercase tracking-widest shadow-lg active:scale-95 ${isOutOfStock
-                ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed border border-neutral-700'
-                : 'bg-red-600 hover:bg-red-700 text-white shadow-red-900/40'
-            }`}
-    >
-        {isOutOfStock ? 'Agotado' : (hasItem ? 'Agregar más' : 'Comprar')}
-    </button>
 );
 
 const AdminActions = ({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) => (

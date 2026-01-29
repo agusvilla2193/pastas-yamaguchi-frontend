@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useSyncExternalStore } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'; // Importamos useSearchParams
 import { useAuth } from '@/context/AuthCore';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -19,7 +19,6 @@ interface LoginResponse {
     };
 }
 
-// Helpers para hidratación segura
 const subscribe = () => () => { };
 const getSnapshot = () => true;
 const getServerSnapshot = () => false;
@@ -31,16 +30,19 @@ const LoginPage: React.FC = () => {
 
     const { isAuthenticated, login, api } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams(); // Hook para leer la URL
 
-    // Blindaje contra errores de hidratación de Next.js
+    // Capturamos el destino (si no hay, por defecto va a /products)
+    const redirectPath = searchParams.get('redirect') || '/products';
+
     const isClient = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
     // Redirección si ya está autenticado
     React.useEffect(() => {
         if (isClient && isAuthenticated) {
-            router.push('/products');
+            router.push(redirectPath);
         }
-    }, [isClient, isAuthenticated, router]);
+    }, [isClient, isAuthenticated, router, redirectPath]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,7 +58,9 @@ const LoginPage: React.FC = () => {
             login(access_token, user);
 
             toast.success(`¡Hola de nuevo, ${user.firstName}!`);
-            router.push('/products');
+
+            // REDIRECCIÓN INTELIGENTE
+            router.push(redirectPath);
 
         } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
@@ -120,7 +124,8 @@ const LoginPage: React.FC = () => {
                 <div className="text-center pt-6 border-t border-neutral-900">
                     <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest">
                         ¿No tienes cuenta?{' '}
-                        <Link href="/register" className="text-white hover:text-red-600 transition-colors ml-1">
+                        {/* Mantenemos el redirect también para el registro si quieres */}
+                        <Link href={`/register?redirect=${redirectPath}`} className="text-white hover:text-red-600 transition-colors ml-1">
                             Regístrate aquí
                         </Link>
                     </p>
@@ -130,7 +135,6 @@ const LoginPage: React.FC = () => {
     );
 };
 
-// Sub-componente interno para mantener limpio el form
 const Label = ({ children }: { children: React.ReactNode }) => (
     <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 ml-4 mb-2 block">
         {children}
