@@ -1,25 +1,26 @@
-import type { Metadata } from "next";
+'use client';
+
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import { AppNavbar } from "@/components/AppNavbar";
 import { Providers } from "./providers";
 import { Toaster } from 'sonner';
+import { WhatsAppButton } from "@/components/WhatsAppButton";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: '--font-inter',
 });
 
-export const metadata: Metadata = {
-  title: "Yamaguchi Pastas | Tradición Artesanal",
-  description: "La precisión del arte japonés en el corazón de la pasta italiana.",
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // URLs de redes sociales
+  const INSTAGRAM_URL = "https://www.instagram.com/pastasyamaguchi";
+  const FACEBOOK_URL = "https://www.facebook.com/pastasyamaguchi";
+
   return (
     <html lang="es" className="dark">
       <body className={`${inter.variable} font-sans antialiased bg-neutral-950 text-white`}>
@@ -27,11 +28,18 @@ export default function RootLayout({
           {/* Notificaciones elegantes */}
           <Toaster position="bottom-right" richColors theme="dark" />
 
+          {/* Barra de Navegación */}
           <AppNavbar />
 
           <main className="min-h-screen">
             {children}
           </main>
+
+          {/* Renderizo el botón aca adentro. 
+              Como está dentro de <Providers>, el WhatsAppButton 
+              puede usar useAuth() sin dar errores. 
+          */}
+          <WhatsAppButton />
 
           <footer className="border-t border-neutral-900 bg-black py-12 px-6">
             <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
@@ -44,8 +52,22 @@ export default function RootLayout({
               </p>
 
               <div className="flex gap-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">
-                <a href="#" className="hover:text-red-600 transition-colors">Instagram</a>
-                <a href="#" className="hover:text-red-600 transition-colors">Facebook</a>
+                <a
+                  href={INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-red-600 transition-colors"
+                >
+                  Instagram
+                </a>
+                <a
+                  href={FACEBOOK_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-red-600 transition-colors"
+                >
+                  Facebook
+                </a>
               </div>
             </div>
           </footer>
