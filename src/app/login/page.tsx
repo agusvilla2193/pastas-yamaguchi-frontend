@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useSyncExternalStore } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation'; // Importamos useSearchParams
+import React, { useState, useSyncExternalStore, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthCore';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -30,15 +30,12 @@ const LoginPage: React.FC = () => {
 
     const { isAuthenticated, login, api } = useAuth();
     const router = useRouter();
-    const searchParams = useSearchParams(); // Hook para leer la URL
+    const searchParams = useSearchParams();
 
-    // Capturamos el destino (si no hay, por defecto va a /products)
     const redirectPath = searchParams.get('redirect') || '/products';
-
     const isClient = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-    // Redirección si ya está autenticado
-    React.useEffect(() => {
+    useEffect(() => {
         if (isClient && isAuthenticated) {
             router.push(redirectPath);
         }
@@ -54,12 +51,12 @@ const LoginPage: React.FC = () => {
                 password,
             });
 
-            const { access_token, user } = response.data;
-            login(access_token, user);
+            const { user } = response.data;
+
+            // Enviamos solo el user, ya que el AuthProvider no requiere el token (usa Cookies)
+            login(user);
 
             toast.success(`¡Hola de nuevo, ${user.firstName}!`);
-
-            // REDIRECCIÓN INTELIGENTE
             router.push(redirectPath);
 
         } catch (err: unknown) {
@@ -81,7 +78,6 @@ const LoginPage: React.FC = () => {
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-6 py-12">
             <div className="w-full max-w-md space-y-8 bg-neutral-950 border border-neutral-800/50 p-10 rounded-[2.5rem] shadow-2xl animate-in fade-in zoom-in duration-500">
-
                 <div className="text-center">
                     <span className="text-red-600 font-black tracking-[0.3em] uppercase text-[10px]">Acceso al Dojo</span>
                     <h2 className="text-4xl font-black italic tracking-tighter mt-2 text-white">
@@ -100,7 +96,6 @@ const LoginPage: React.FC = () => {
                             required
                         />
                     </div>
-
                     <div>
                         <Label>Contraseña</Label>
                         <Input
@@ -111,7 +106,6 @@ const LoginPage: React.FC = () => {
                             required
                         />
                     </div>
-
                     <button
                         type="submit"
                         disabled={isLoading}
@@ -124,7 +118,6 @@ const LoginPage: React.FC = () => {
                 <div className="text-center pt-6 border-t border-neutral-900">
                     <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest">
                         ¿No tienes cuenta?{' '}
-                        {/* Mantenemos el redirect también para el registro si quieres */}
                         <Link href={`/register?redirect=${redirectPath}`} className="text-white hover:text-red-600 transition-colors ml-1">
                             Regístrate aquí
                         </Link>
