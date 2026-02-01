@@ -5,14 +5,19 @@ import { toast } from 'sonner';
 import axios from 'axios';
 
 export function useRegisterForm() {
-    const { api, login } = useAuth();
+    const { api } = useAuth();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
         email: '',
         password: '',
+        phone: '',
+        address: '',
+        city: '',
+        zipCode: '',
     });
 
     const handleInputChange = (field: string, value: string) => {
@@ -24,18 +29,25 @@ export function useRegisterForm() {
         setIsLoading(true);
 
         try {
-            const response = await api.post('/auth/register', formData);
-            const { access_token, user } = response.data;
+            // El backend ahora debería procesar el mail sin 'await' para responder rápido
+            await api.post('/auth/register', formData);
 
-            if (access_token && user) {
-                login(access_token, user);
-                toast.success(`¡Bienvenido al Dojo, ${user.firstName}!`);
-                router.push('/products');
-            }
+            // Informo al usuario y lo redirijo al login 
+            // para que espere la confirmación de su mail
+            toast.success('¡Registro casi completo! Revisa tu email para activar tu cuenta.', {
+                duration: 8000,
+            });
+
+            router.push('/login');
+
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
-                const message = error.response?.data?.message || 'Error al registrarse';
-                toast.error(message);
+                const message = error.response?.data?.message;
+                if (Array.isArray(message)) {
+                    message.forEach(msg => toast.error(msg));
+                } else {
+                    toast.error(message || 'Error al registrarse');
+                }
             } else {
                 toast.error('Ocurrió un error inesperado');
             }

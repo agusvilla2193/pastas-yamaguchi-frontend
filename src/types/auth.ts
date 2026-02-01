@@ -4,11 +4,12 @@ export interface User {
     id: number;
     email: string;
     role: string;
-    firstName?: string;
-    first_name?: string;
-    lastName?: string;
-    last_name?: string;
-    name?: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    address: string;
+    city: string;
+    zipCode?: string;
 }
 
 export interface AuthContextType {
