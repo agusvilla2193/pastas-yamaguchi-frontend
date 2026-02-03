@@ -1,77 +1,32 @@
 'use client';
 
-import React, { useState, useSyncExternalStore, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect, useSyncExternalStore } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthCore';
 import Link from 'next/link';
-import { toast } from 'sonner';
-import axios from 'axios';
 import { Input } from '@/components/ui/FormElements';
-
-interface LoginResponse {
-    access_token: string;
-    user: {
-        id: number;
-        firstName: string;
-        lastName: string;
-        email: string;
-        role: string;
-    };
-}
+import { useLoginForm } from '@/hooks/useLoginForm';
 
 const subscribe = () => () => { };
 const getSnapshot = () => true;
 const getServerSnapshot = () => false;
 
 const LoginPage: React.FC = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const { isAuthenticated, login, api } = useAuth();
+    const { isAuthenticated } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const isClient = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
     const redirectPath = searchParams.get('redirect') || '/products';
-    const isClient = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+    // Usamos nuestro nuevo hook modularizado
+    const { email, setEmail, password, setPassword, isLoading, handleSubmit } = useLoginForm(redirectPath);
 
     useEffect(() => {
         if (isClient && isAuthenticated) {
             router.push(redirectPath);
         }
     }, [isClient, isAuthenticated, router, redirectPath]);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-
-        try {
-            const response = await api.post<LoginResponse>('/auth/login', {
-                email,
-                password,
-            });
-
-            const { user } = response.data;
-
-            // Enviamos solo el user, ya que el AuthProvider no requiere el token (usa Cookies)
-            login(user);
-
-            toast.success(`¡Hola de nuevo, ${user.firstName}!`);
-            router.push(redirectPath);
-
-        } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                const msg = err.response?.status === 401
-                    ? 'Credenciales incorrectas'
-                    : 'Error al iniciar sesión';
-                toast.error(msg);
-            } else {
-                toast.error('Error de conexión');
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     if (!isClient || isAuthenticated) return null;
 
@@ -80,8 +35,8 @@ const LoginPage: React.FC = () => {
             <div className="w-full max-w-md space-y-8 bg-neutral-950 border border-neutral-800/50 p-10 rounded-[2.5rem] shadow-2xl animate-in fade-in zoom-in duration-500">
                 <div className="text-center">
                     <span className="text-red-600 font-black tracking-[0.3em] uppercase text-[10px]">Acceso al Dojo</span>
-                    <h2 className="text-4xl font-black italic tracking-tighter mt-2 text-white">
-                        INICIAR <span className="text-red-600">SESIÓN</span>
+                    <h2 className="text-4xl font-black italic tracking-tighter mt-2 text-white uppercase">
+                        Iniciar <span className="text-red-600">Sesión</span>
                     </h2>
                 </div>
 
@@ -96,7 +51,7 @@ const LoginPage: React.FC = () => {
                             required
                         />
                     </div>
-                    <div>
+                    <div className="space-y-1">
                         <Label>Contraseña</Label>
                         <Input
                             type="password"
@@ -105,6 +60,14 @@ const LoginPage: React.FC = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
+                        <div className="flex justify-end pr-2">
+                            <Link
+                                href="/forgot-password"
+                                className="text-[9px] text-neutral-600 hover:text-red-600 transition-colors uppercase font-bold tracking-tighter"
+                            >
+                                ¿Olvidaste tu contraseña?
+                            </Link>
+                        </div>
                     </div>
                     <button
                         type="submit"
@@ -115,7 +78,7 @@ const LoginPage: React.FC = () => {
                     </button>
                 </form>
 
-                <div className="text-center pt-6 border-t border-neutral-900">
+                <div className="text-center pt-6 border-t border-neutral-900 space-y-2">
                     <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest">
                         ¿No tienes cuenta?{' '}
                         <Link href={`/register?redirect=${redirectPath}`} className="text-white hover:text-red-600 transition-colors ml-1">
