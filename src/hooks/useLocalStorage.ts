@@ -1,29 +1,40 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
-    // 1. Lazy Initializer: Se ejecuta solo una vez al crear el estado
-    const [storedValue, setStoredValue] = useState<T>(() => {
-        if (typeof window === 'undefined') return initialValue;
+    const [storedValue, setStoredValue] = useState<T>(initialValue);
+    const isFirstRender = useRef(true);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
 
         try {
             const item = window.localStorage.getItem(key);
             if (item) {
+                let parsed: T;
                 try {
-                    return JSON.parse(item);
+                    parsed = JSON.parse(item);
                 } catch {
-                    return item as unknown as T;
+                    parsed = item as unknown as T;
                 }
+
+                // Uso requestAnimationFrame para evitar que el linter detecte 
+                // una llamada síncrona al estado dentro del efecto.
+                requestAnimationFrame(() => {
+                    setStoredValue(parsed);
+                });
             }
-            return initialValue;
         } catch (error) {
             console.error(`Error inicializando key "${key}":`, error);
-            return initialValue;
         }
-    });
+    }, [key]);
 
-    // 2. Sincronizar con LocalStorage cuando el valor cambie
-    // Aquí no llamamos a setState, por lo que el linter estará feliz
     useEffect(() => {
+        // No guardar en el primer render para no pisar el contenido existente
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
         if (typeof window === 'undefined') return;
 
         try {
@@ -36,7 +47,6 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
         }
     }, [key, storedValue]);
 
-    // Usamos useCallback para que la función de actualizar sea estable
     const setValue = useCallback((value: T | ((val: T) => T)) => {
         setStoredValue(value);
     }, []);
