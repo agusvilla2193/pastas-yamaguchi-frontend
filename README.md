@@ -20,3 +20,16 @@ Interfaz de usuario para el **Dojo Yamaguchi**. Una experiencia de usuario moder
 1. Instalar dependencias:
    ```bash
    npm install
+
+2. Configurar variables de entorno (.env.local):
+   
+   NEXT_PUBLIC_API_URL=(Ej: http://localhost:3000)
+
+3. Correr en modo desarrollo:
+   ```bash
+   npm run dev
+
+4. Compilar para producción:
+   ```bash
+   npm run build
+   
