@@ -13,12 +13,11 @@ export default function SuccessPage() {
     const { clearCart } = useCart();
     const hasCleared = useRef(false);
 
-    // Evitamos problemas de hidratación
     const isClient = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
     useEffect(() => {
-        // Solo ejecuta la limpieza si estamos en el cliente y no se hizo antes
         if (isClient && !hasCleared.current) {
+            // Limpiamos el carrito local después de un pago exitoso
             clearCart();
             hasCleared.current = true;
         }
@@ -30,7 +29,6 @@ export default function SuccessPage() {
         <div className="min-h-[80vh] flex items-center justify-center px-6 bg-neutral-950">
             <div className="max-w-md w-full text-center animate-in fade-in zoom-in slide-in-from-bottom-8 duration-1000 ease-out">
 
-                {/* ICONO DE ÉXITO CON GLOW */}
                 <div className="relative inline-block mb-10">
                     <div className="absolute inset-0 bg-red-600 blur-[40px] opacity-30 animate-pulse"></div>
                     <div className="relative border-2 border-red-600 w-28 h-28 rounded-full flex items-center justify-center mx-auto bg-neutral-950 shadow-[0_0_30px_rgba(220,38,38,0.2)]">
@@ -45,26 +43,25 @@ export default function SuccessPage() {
                 </h1>
 
                 <p className="text-neutral-500 text-sm leading-relaxed mb-12 italic font-medium max-w-[280px] mx-auto">
-                    El Sensei ya recibió tu orden y está seleccionando las mejores materias primas.
+                    El Sensei ya recibió tu orden y está seleccionando las mejores materias primas. Recibirás un correo con los detalles.
                 </p>
 
                 <div className="flex flex-col gap-4">
                     <Link
                         href="/orders"
-                        className="bg-white text-black font-black uppercase italic py-5 rounded-full hover:bg-red-600 hover:text-white transition-all duration-500 tracking-tighter text-sm shadow-[0_10px_40px_rgba(0,0,0,0.5)] active:scale-95"
+                        className="bg-white text-black font-black uppercase italic py-5 rounded-full hover:bg-red-600 hover:text-white transition-all duration-500 tracking-tighter text-sm shadow-[0_10px_40px_rgba(0,0,0,0.5)] active:scale-95 text-center"
                     >
                         Ver mis pedidos
                     </Link>
 
                     <Link
                         href="/products"
-                        className="text-neutral-600 font-black uppercase italic text-[10px] tracking-[0.3em] hover:text-white transition-colors py-4"
+                        className="text-neutral-600 font-black uppercase italic text-[10px] tracking-[0.3em] hover:text-white transition-colors py-4 text-center"
                     >
                         Volver a la carta
                     </Link>
                 </div>
 
-                {/* DECORACIÓN MINIMALISTA */}
                 <div className="mt-16 flex items-center justify-center gap-2 opacity-20">
                     <div className="w-1 h-1 bg-red-600 rounded-full" />
                     <div className="w-1 h-1 bg-neutral-600 rounded-full" />

@@ -38,7 +38,7 @@ const getSnapshot = () => true;
 const getServerSnapshot = () => false;
 
 export default function CartPage() {
-    const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
+    const { cart, removeFromCart, updateQuantity, totalPrice } = useCart();
     const { isAuthenticated, api } = useAuth();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
@@ -52,10 +52,12 @@ export default function CartPage() {
             return;
         }
 
-        if (isLoading) return;
+        if (cart.length === 0) return;
         setIsLoading(true);
 
         try {
+            // 1. Sincronizamos el carrito con el backend
+            // Es buena práctica limpiar y re-subir para asegurar consistencia
             await api.delete('/cart/clear');
             await Promise.all(
                 cart.map((item) =>
@@ -66,13 +68,20 @@ export default function CartPage() {
                 )
             );
 
+            // 2. Creamos la orden y obtenemos el link de Mercado Pago
             const response = await api.post('/orders');
 
             if (response.status === 201) {
-                toast.success('¡Honor y Pasta!', {
-                    description: 'Tu pedido ha sido recibido en el Dojo.'
-                });
-                router.push('/checkout/success');
+                const { init_point } = response.data;
+
+                if (init_point) {
+                    toast.success('Redirigiendo a Mercado Pago...');
+                    // Redirección externa obligatoria para pagar
+                    window.location.href = init_point;
+                } else {
+                    toast.success('¡Pedido recibido!');
+                    router.push('/checkout/success');
+                }
             }
         } catch (error: unknown) {
             let msg = 'No pudimos procesar tu pedido';
@@ -80,6 +89,7 @@ export default function CartPage() {
                 msg = error.response?.data?.message || msg;
             }
             toast.error(msg);
+            console.error('Checkout error:', error);
         } finally {
             setIsLoading(false);
         }
@@ -104,13 +114,9 @@ export default function CartPage() {
                             onRemove={removeFromCart}
                         />
                     ))}
-
-                    <button
-                        onClick={clearCart}
-                        className="text-[10px] font-black uppercase tracking-widest text-neutral-600 hover:text-red-500 transition-colors pl-2"
-                    >
-                        Vaciar carrito completo
-                    </button>
+                    <Link href="/products" className="inline-block text-[10px] font-black uppercase tracking-widest text-neutral-600 hover:text-red-500 transition-colors pl-2">
+                        ← Seguir comprando
+                    </Link>
                 </div>
 
                 <div className="lg:col-span-1">
@@ -201,11 +207,12 @@ const OrderSummary = ({ totalPrice, isLoading, isAuthenticated, onCheckout }: Or
             {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    Enviando...
+                    Procesando...
                 </span>
             ) : (
-                isAuthenticated ? 'Confirmar Pedido' : 'Entrar para Comprar'
+                isAuthenticated ? 'Pagar con Mercado Pago' : 'Entrar para Comprar'
             )}
         </button>
+        <p className="text-[9px] text-neutral-600 text-center mt-4 italic uppercase tracking-tighter">Protegido por el honor del Sensei</p>
     </div>
 );
