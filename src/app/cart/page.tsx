@@ -32,6 +32,14 @@ interface OrderSummaryProps {
     onCheckout: () => Promise<void>;
 }
 
+interface CreateOrderResponse {
+    init_point: string;
+    order: {
+        id: number;
+        total: number;
+    };
+}
+
 // Helpers para hidratación segura
 const subscribe = () => () => { };
 const getSnapshot = () => true;
@@ -57,7 +65,6 @@ export default function CartPage() {
 
         try {
             // 1. Sincronizamos el carrito con el backend
-            // Es buena práctica limpiar y re-subir para asegurar consistencia
             await api.delete('/cart/clear');
             await Promise.all(
                 cart.map((item) =>
@@ -69,14 +76,15 @@ export default function CartPage() {
             );
 
             // 2. Creamos la orden y obtenemos el link de Mercado Pago
-            const response = await api.post('/orders');
+            // Tipamos la respuesta de axios para evitar el uso de 'any'
+            const response = await api.post<CreateOrderResponse>('/orders');
 
             if (response.status === 201) {
                 const { init_point } = response.data;
 
                 if (init_point) {
                     toast.success('Redirigiendo a Mercado Pago...');
-                    // Redirección externa obligatoria para pagar
+                    // Redirección externa obligatoria para pagar con dinero real
                     window.location.href = init_point;
                 } else {
                     toast.success('¡Pedido recibido!');
@@ -168,7 +176,11 @@ const CartItem = ({ item, onUpdate, onRemove }: CartItemProps) => (
         </div>
 
         <div className="flex items-center gap-4 bg-black/40 rounded-xl p-1 border border-neutral-800">
-            <button onClick={() => onUpdate(item.id, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center hover:bg-red-600 text-white rounded-lg transition-colors font-bold">-</button>
+            <button
+                onClick={() => onUpdate(item.id, item.quantity - 1)}
+                className="w-8 h-8 flex items-center justify-center hover:bg-red-600 text-white rounded-lg transition-colors font-bold"
+                disabled={item.quantity <= 1}
+            >-</button>
             <span className="text-sm font-black w-4 text-center text-white">{item.quantity}</span>
             <button onClick={() => onUpdate(item.id, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-red-600 text-white rounded-lg transition-colors font-bold">+</button>
         </div>
