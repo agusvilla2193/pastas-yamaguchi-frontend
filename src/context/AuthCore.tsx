@@ -4,26 +4,32 @@ import { createContext, useContext } from 'react';
 import { AuthContextType } from '@/types/auth';
 import axios, { AxiosInstance } from 'axios';
 
-/**
- * CONFIGURACIÓN DE LA API PARA PRODUCCIÓN
- * Se exporta la instancia con tipado estricto de AxiosInstance.
- */
 export const apiInstance: AxiosInstance = axios.create({
-    // Prioriza la variable de entorno para el despliegue final
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
-    // Permite el intercambio de cookies de sesión (JWT) en producción
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     }
 });
 
-// Creamos el contexto con el tipo definido en tus interfaces, sin usar 'any'
+/**
+ * INTERCEPTOR DE AUTORIZACIÓN
+ * Agrega el token JWT a todas las peticiones salientes
+ */
+apiInstance.interceptors.request.use((config) => {
+    // Buscamos el token (ajustá el nombre 'token' si usas otro en tu login)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+    if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+}, (error) => {
+    return Promise.reject(error);
+});
+
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Hook personalizado para acceder al estado de autenticación.
- */
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (!context) {
