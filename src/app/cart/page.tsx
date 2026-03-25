@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import axios from 'axios';
+import Script from 'next/script';
 
 // --- INTERFACES ---
 interface CartItemData {
@@ -34,10 +35,29 @@ interface OrderSummaryProps {
 
 interface CreateOrderResponse {
     init_point: string;
+    preferenceId: string;
     order: {
         id: number;
         total: number;
     };
+}
+
+// Tipado para el SDK de Mercado Pago sin usar 'any'
+interface MPCheckoutOptions {
+    preference: {
+        id: string;
+    };
+    autoOpen: boolean;
+}
+
+interface MercadoPagoSDK {
+    checkout: (options: MPCheckoutOptions) => void;
+}
+
+declare global {
+    interface Window {
+        MercadoPago: new (publicKey: string) => MercadoPagoSDK;
+    }
 }
 
 // Helpers para hidratación segura
@@ -75,20 +95,27 @@ export default function CartPage() {
                 )
             );
 
-            // 2. Creamos la orden y obtenemos el link de Mercado Pago
-            // Tipamos la respuesta de axios para evitar el uso de 'any'
+            // 2. Creamos la orden y obtenemos el preferenceId
             const response = await api.post<CreateOrderResponse>('/orders');
 
             if (response.status === 201) {
-                const { init_point } = response.data;
+                const { preferenceId } = response.data;
 
-                if (init_point) {
-                    toast.success('Redirigiendo a Mercado Pago...');
-                    // Redirección externa obligatoria para pagar con dinero real
-                    window.location.href = init_point;
+                if (preferenceId && window.MercadoPago) {
+                    const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
+                    if (!publicKey) {
+                        throw new Error('Public Key de MP no configurada');
+                    }
+
+                    const mp = new window.MercadoPago(publicKey);
+                    mp.checkout({
+                        preference: {
+                            id: preferenceId
+                        },
+                        autoOpen: true
+                    });
                 } else {
-                    toast.success('¡Pedido recibido!');
-                    router.push('/checkout/success');
+                    toast.error('Error al cargar el módulo de pagos');
                 }
             }
         } catch (error: unknown) {
@@ -107,40 +134,46 @@ export default function CartPage() {
     if (cart.length === 0) return <EmptyCart />;
 
     return (
-        <div className="max-w-4xl mx-auto px-6 py-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <h1 className="text-5xl font-black uppercase italic mb-12 tracking-tighter text-white">
-                Tu <span className="text-red-600">Pedido</span>
-            </h1>
+        <>
+            <Script
+                src="https://sdk.mercadopago.com/js/v2"
+                strategy="lazyOnload"
+            />
+            <div className="max-w-4xl mx-auto px-6 py-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <h1 className="text-5xl font-black uppercase italic mb-12 tracking-tighter text-white">
+                    Tu <span className="text-red-600">Pedido</span>
+                </h1>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                <div className="lg:col-span-2 space-y-6">
-                    {cart.map((item) => (
-                        <CartItem
-                            key={item.id}
-                            item={item}
-                            onUpdate={updateQuantity}
-                            onRemove={removeFromCart}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                    <div className="lg:col-span-2 space-y-6">
+                        {cart.map((item) => (
+                            <CartItem
+                                key={item.id}
+                                item={item}
+                                onUpdate={updateQuantity}
+                                onRemove={removeFromCart}
+                            />
+                        ))}
+                        <Link href="/products" className="inline-block text-[10px] font-black uppercase tracking-widest text-neutral-600 hover:text-red-500 transition-colors pl-2">
+                            ← Seguir comprando
+                        </Link>
+                    </div>
+
+                    <div className="lg:col-span-1">
+                        <OrderSummary
+                            totalPrice={totalPrice}
+                            isLoading={isLoading}
+                            isAuthenticated={isAuthenticated}
+                            onCheckout={handleCheckout}
                         />
-                    ))}
-                    <Link href="/products" className="inline-block text-[10px] font-black uppercase tracking-widest text-neutral-600 hover:text-red-500 transition-colors pl-2">
-                        ← Seguir comprando
-                    </Link>
-                </div>
-
-                <div className="lg:col-span-1">
-                    <OrderSummary
-                        totalPrice={totalPrice}
-                        isLoading={isLoading}
-                        isAuthenticated={isAuthenticated}
-                        onCheckout={handleCheckout}
-                    />
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
 
-// --- SUB-COMPONENTES TIPADOS ---
+// --- SUB-COMPONENTES ---
 
 const EmptyCart = () => (
     <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-6 animate-in fade-in duration-500">

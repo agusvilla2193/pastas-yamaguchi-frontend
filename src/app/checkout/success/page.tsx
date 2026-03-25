@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 
 // Helpers para hidratación segura
@@ -11,7 +12,11 @@ const getServerSnapshot = () => false;
 
 export default function SuccessPage() {
     const { clearCart } = useCart();
+    const searchParams = useSearchParams();
     const hasCleared = useRef(false);
+
+    // Obtenemos el ID de pago de Mercado Pago por si queremos mostrarlo
+    const paymentId = searchParams.get('payment_id');
 
     const isClient = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
@@ -42,9 +47,16 @@ export default function SuccessPage() {
                     ¡GRACIAS POR <span className="text-red-600 block text-7xl mt-1">TU COMPRA!</span>
                 </h1>
 
-                <p className="text-neutral-500 text-sm leading-relaxed mb-12 italic font-medium max-w-[280px] mx-auto">
-                    El Sensei ya recibió tu orden y está seleccionando las mejores materias primas. Recibirás un correo con los detalles.
-                </p>
+                <div className="space-y-4 mb-12">
+                    <p className="text-neutral-500 text-sm leading-relaxed italic font-medium max-w-[280px] mx-auto">
+                        El Sensei ya recibió tu orden y está seleccionando las mejores materias primas. Recibirás un correo con los detalles.
+                    </p>
+                    {paymentId && (
+                        <p className="text-neutral-700 text-[9px] uppercase tracking-widest font-bold">
+                            Comprobante: #{paymentId}
+                        </p>
+                    )}
+                </div>
 
                 <div className="flex flex-col gap-4">
                     <Link

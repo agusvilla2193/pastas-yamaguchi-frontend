@@ -4,6 +4,11 @@ import { createContext, useContext } from 'react';
 import { AuthContextType } from '@/types/auth';
 import axios, { AxiosInstance } from 'axios';
 
+/**
+ * INSTANCIA DE API
+ * withCredentials: true es la clave para que el navegador mande la cookie
+ * de Render a Vercel automáticamente.
+ */
 export const apiInstance: AxiosInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
     withCredentials: true,
@@ -12,21 +17,8 @@ export const apiInstance: AxiosInstance = axios.create({
     }
 });
 
-/**
- * INTERCEPTOR DE AUTORIZACIÓN
- * Agrega el token JWT a todas las peticiones salientes
- */
-apiInstance.interceptors.request.use((config) => {
-    // Buscamos el token (ajustá el nombre 'token' si usas otro en tu login)
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-    if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-}, (error) => {
-    return Promise.reject(error);
-});
+// Al usar cookies, ya no necesitamos interceptores que busquen en localStorage.
+// El navegador adjunta la cookie 'access_token' en cada petición a la baseURL automáticamente.
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
